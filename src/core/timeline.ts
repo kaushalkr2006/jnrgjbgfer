@@ -107,8 +107,8 @@ function buildStops(): Stop[] {
     sub: 0,
     length: 1.2,
     transition: 0.7,
-    cam: add(st, [0, 9.4, 14.6]),
-    target: add(st, [0, 0.2, 0.9]),
+    cam: add(st, [0, 6.6, 10.4]),
+    target: add(st, [0.3, 0, -0.5]),
     arc: 3,
     framing: 'side',
   });

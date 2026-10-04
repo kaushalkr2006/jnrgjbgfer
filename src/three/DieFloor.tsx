@@ -42,6 +42,7 @@ uniform vec3 uLight;
 uniform float uScanHalf;
 uniform float uFadeNear;
 uniform float uFadeFar;
+uniform float uDim;
 uniform vec3 uSignal;
 uniform vec3 uBg;
 varying vec3 vWorld;
@@ -161,6 +162,8 @@ void main() {
   float graze = 1.0 - abs(V.y);
   col *= mix(0.42, 1.0, smoothstep(0.12, 0.75, graze));
 
+  col *= uDim;
+
   // ---- distance fade into the background (clean horizon at any camera angle) ---------
   float dist = length(vWorld.xz - cameraPosition.xz);
   col = mix(uBg, col, 1.0 - smoothstep(uFadeNear, uFadeFar, dist));
@@ -191,6 +194,7 @@ export function DieFloor() {
           uScanHalf: { value: SCAN_HALF },
           uFadeNear: { value: 24 },
           uFadeFar: { value: 62 },
+          uDim: { value: 1 },
           uSignal: { value: new Color('#6ee7ff') },
           uBg: { value: new Color('#030405') },
         },
@@ -203,6 +207,8 @@ export function DieFloor() {
   const light = useMemo(() => ({ az: -1.25, el: 0.32 }), []);
   useFrame(() => {
     if (mesh.current) mesh.current.position.set(camera.position.x, FLOOR_Y, camera.position.z);
+    // Full presence on the opening; a calmer backdrop once content takes over.
+    material.uniforms.uDim.value = 1 - 0.38 * smoothstep(0.6, 1.6, engine.stopFloat);
     const dt = frame.dt;
     // Light sweeps in with the intro, then drifts and follows the pointer slightly.
     const intro = easeInOutCubic(smoothstep(0, 1, shared.uIntro.value));

@@ -18,6 +18,7 @@ export interface SpatialObjectProps extends GroupProps {
   /** Radius used to normalise the pointer position for tilt. */
   reach?: number;
   onSelect?: () => void;
+  onHover?: (over: boolean) => void;
 }
 
 const tmp = new Vector3();
@@ -34,6 +35,7 @@ export function SpatialObject({
   tilt = 0.12,
   reach = 1.5,
   onSelect,
+  onHover,
   children,
   ...group
 }: SpatialObjectProps) {
@@ -64,10 +66,12 @@ export function SpatialObject({
         onPointerOver: (e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           st.current.over = true;
+          onHover?.(true);
           if (onSelect) document.body.style.cursor = 'pointer';
         },
         onPointerOut: () => {
           st.current.over = false;
+          onHover?.(false);
           document.body.style.cursor = '';
         },
         onPointerMove: (e: ThreeEvent<PointerEvent>) => {
