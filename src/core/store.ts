@@ -59,6 +59,8 @@ export interface AppState {
   stackActive: number;
   /** True after a manual selection, until the auto-cycle resumes. */
   stackManual: boolean;
+  /** Keyword currently shown on the identity page. */
+  identityWord: number;
 }
 
 export const app = createStore<AppState>({
@@ -75,6 +77,7 @@ export const app = createStore<AppState>({
   evidenceFocus: -1,
   stackActive: 0,
   stackManual: false,
+  identityWord: 0,
 });
 
 export const useApp = <S,>(selector: (s: AppState) => S) => useStore(app, selector);

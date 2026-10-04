@@ -16,7 +16,9 @@ import { Station, useStationRef } from './Station';
 import { ANCHORS, firstStopOf } from '../../core/timeline';
 import { profile } from '../../content/profile';
 import { engine } from '../../core/scroll';
-import { mulberry32, smoothstep, stagedSteps } from '../../core/math';
+import { mulberry32, smoothstep } from '../../core/math';
+import { app } from '../../core/store';
+import { frame } from '../../core/ticker';
 import { shared, C } from '../shared';
 import { rectLines } from '../geometry/edges';
 import { mats } from '../objects/materials';
@@ -205,21 +207,32 @@ function VoxelWord({ cellPx }: { cellPx: number }) {
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => material.dispose(), [material]);
 
+  const morph = useRef({ prev: 0, cur: 0, t: 1 });
   useFrame(() => {
     if (!station.current?.visible || !group.current) return;
     const u = material.uniforms;
     const arrival = engine.arrivalOf(stop);
     const assemble = smoothstep(0.3, 1, arrival);
     if (assemble < 1) {
+      // Assemble from scattered cells into whichever keyword is current.
+      const cur = app.get().identityWord;
+      morph.current = { prev: cur, cur, t: 1 };
       u.uFrom.value = 0;
-      u.uTo.value = 1;
+      u.uTo.value = 1 + cur;
       u.uMix.value = engine.reduced ? Math.round(assemble) : assemble;
     } else {
-      const w = stagedSteps(engine.holdOf(stop), 5, 0.35);
-      const k = Math.floor(w);
-      u.uFrom.value = 1 + k;
-      u.uTo.value = Math.min(5, 2 + k);
-      u.uMix.value = engine.reduced ? Math.round(w - k) : w - k;
+      // Morph from the previous keyword to the selected one over ~1.1 s.
+      const m = morph.current;
+      const w = app.get().identityWord;
+      if (w !== m.cur) {
+        m.prev = m.cur;
+        m.cur = w;
+        m.t = 0;
+      }
+      m.t = engine.reduced ? 1 : Math.min(1, m.t + frame.dt / 1.1);
+      u.uFrom.value = 1 + m.prev;
+      u.uTo.value = 1 + m.cur;
+      u.uMix.value = m.t;
     }
     // Fit the word to the viewport width.
     const dist = camera.position.distanceTo(group.current.getWorldPosition(tmpV));

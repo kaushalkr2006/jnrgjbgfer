@@ -1200,3 +1200,19 @@ html[data-motion="reduced"] .ch__go {
 .ch--pending:hover .ch__id {
   color: var(--ink-3);
 }
+
+/* Identity keywords are selectable */
+.identity__keys button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: left;
+  pointer-events: auto;
+  transition: color 0.3s;
+}
+.identity__keys button:hover {
+  color: var(--ink);
+}

@@ -7,8 +7,7 @@ import { clamp, damp, easeInOutCubic } from './math';
 /** Hold-progress targets used by keyboard / step navigation (fractions of each stop's hold). */
 const STEP_TARGETS: Record<number, number[]> = {};
 STOPS.forEach((s) => {
-  if (s.section === 'identity') STEP_TARGETS[s.index] = [0, 0.28, 0.48, 0.68, 0.88];
-  else STEP_TARGETS[s.index] = [0];
+  STEP_TARGETS[s.index] = [0];
 });
 
 /** Fraction of a transition the user must scroll before the flight commits. */
@@ -70,7 +69,7 @@ class ScrollEngine {
   private lastW = 0;
   private lastH = 0;
   private started = false;
-  private wheel = { last: 0, abs: 0, guard: false, dir: 0 };
+  private wheel = { last: 0, abs: 0, guard: false, dir: 0, endedAt: 0 };
 
   init(spacer: HTMLElement, reduced: boolean) {
     if (this.started) return;
@@ -149,6 +148,11 @@ class ScrollEngine {
     if (dir !== 0) w.dir = dir;
 
     if (this.flying || this.pendingJump !== null) {
+      if (e.cancelable) e.preventDefault();
+      return false;
+    }
+    // Brief cooldown right after a flight: residual momentum never chains into the next stop.
+    if (now - w.endedAt < 380) {
       if (e.cancelable) e.preventDefault();
       return false;
     }
@@ -284,6 +288,7 @@ class ScrollEngine {
     this.flying = false;
     // Absorb the remaining inertia of the gesture that started this flight.
     this.wheel.guard = this.input === 'wheel';
+    this.wheel.endedAt = performance.now();
   }
 
   /**
