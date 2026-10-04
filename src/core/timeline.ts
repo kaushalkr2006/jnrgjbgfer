@@ -83,7 +83,8 @@ function buildStops(): Stop[] {
   raw.push({
     section: 'identity',
     sub: 0,
-    length: 3.6,
+    // One stop: keywords morph on a timer (or on click) instead of needing extra swipes.
+    length: 1.75,
     transition: 1.3,
     cam: add(id, [0, 3.1, 10.5]),
     target: add(id, [0, 2.75, 0]),

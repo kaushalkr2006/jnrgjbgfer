@@ -1,21 +1,37 @@
+import { useEffect, useRef } from 'react';
 import { Editorial } from '../Editorial';
-import { useState } from 'react';
 import { SectionTransition, r } from '../SectionTransition';
 import { profile } from '../../content/profile';
-import { engine } from '../../core/scroll';
-import { useTick } from '../../core/ticker';
-import { firstStopOf, sectionIndex } from '../../core/timeline';
-import { stagedSteps } from '../../core/math';
+import { app, useApp } from '../../core/store';
+import { sectionIndex } from '../../core/timeline';
 
-const STOP = firstStopOf('identity');
+const CYCLE_MS = 2300;
+const PAUSE_AFTER_INPUT_MS = 8000;
 
-/** 02 — Professional identity. The 3D keyword morphs; this panel indexes it and states direction. */
+/**
+ * 02 — Professional identity. One stop: the 3D keyword morphs on a timer, and each keyword
+ * in the index can be picked directly — no extra swipes.
+ */
 export function IdentityPanel() {
-  const [word, setWord] = useState(0);
-  useTick(() => {
-    const w = Math.round(stagedSteps(engine.holdOf(STOP), profile.identity.keywords.length, 0.35));
-    if (w !== word) setWord(w);
-  });
+  const visible = useApp((s) => s.visibleSection === 'identity');
+  const reduced = useApp((s) => s.reducedMotion);
+  const word = useApp((s) => s.identityWord);
+  const manualAt = useRef(0);
+  const n = profile.identity.keywords.length;
+
+  useEffect(() => {
+    if (!visible || reduced) return;
+    const id = window.setInterval(() => {
+      if (performance.now() - manualAt.current < PAUSE_AFTER_INPUT_MS) return;
+      app.set({ identityWord: (app.get().identityWord + 1) % n });
+    }, CYCLE_MS);
+    return () => window.clearInterval(id);
+  }, [visible, reduced, n]);
+
+  const pick = (i: number) => {
+    manualAt.current = performance.now();
+    app.set({ identityWord: i });
+  };
 
   return (
     <SectionTransition id="identity" label="Professional identity">
@@ -36,9 +52,11 @@ export function IdentityPanel() {
         </div>
         <ol className="identity__keys" aria-label="Focus keywords">
           {profile.identity.keywords.map((k, i) => (
-            <li key={k} className={i === word ? 'is-active' : ''} data-r style={r(3 + i)} aria-current={i === word}>
-              <span className="identity__keynum">{String(i + 1).padStart(2, '0')}</span>
-              {k}
+            <li key={k} className={i === word ? 'is-active' : ''} data-r style={r(3 + i)}>
+              <button type="button" onClick={() => pick(i)} aria-pressed={i === word}>
+                <span className="identity__keynum">{String(i + 1).padStart(2, '0')}</span>
+                {k}
+              </button>
             </li>
           ))}
         </ol>
