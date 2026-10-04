@@ -28,7 +28,7 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'projects', index: '04', label: 'Projects' },
   { id: 'career', index: '05', label: 'Direction' },
   { id: 'evidence', index: '06', label: 'Evidence' },
-  { id: 'system', index: '07', label: 'System' },
+  { id: 'system', index: '07', label: 'Contact' },
 ];
 
 export type Vec3 = [number, number, number];
@@ -161,7 +161,7 @@ function buildStops(): Stop[] {
     cam: add(sy, [0, 7.4, 15.4]),
     target: add(sy, [0, 0.9, 0]),
     arc: 1.5,
-    framing: 'center',
+    framing: 'side',
   });
 
   return raw.map((s, index) => ({ ...s, index }));

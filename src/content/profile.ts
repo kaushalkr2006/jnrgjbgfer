@@ -3,8 +3,14 @@
  * Do not add employers, grades, awards, metrics or results that have not been supplied.
  */
 
-export interface ProfileLink {
+export type ContactId = 'github' | 'linkedin' | 'instagram' | 'email';
+
+export interface ContactChannel {
+  id: ContactId;
   label: string;
+  /** Displayed handle / address. */
+  handle: string;
+  /** Full URL (use `mailto:` for email). Channels with an empty href are not shown. */
   href: string;
 }
 
@@ -44,10 +50,15 @@ export const profile = {
   },
 
   /**
-   * Public links (GitHub, email, etc.). Intentionally empty until real URLs are supplied —
-   * add entries here and they will appear in the final scene automatically.
+   * Contact channels shown on the final page. Fill in `handle` + `href` for each one;
+   * any channel left empty is hidden automatically.
    */
-  links: [] as ProfileLink[],
+  contact: [
+    { id: 'github', label: 'GitHub', handle: 'kaushalkr2006', href: 'https://github.com/kaushalkr2006' },
+    { id: 'linkedin', label: 'LinkedIn', handle: '', href: '' },
+    { id: 'instagram', label: 'Instagram', handle: '', href: '' },
+    { id: 'email', label: 'Gmail', handle: '', href: '' },
+  ] as ContactChannel[],
 } as const;
 
 export type EvidenceKind =
