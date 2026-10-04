@@ -2,12 +2,13 @@ import { useMemo, useRef, type RefObject } from 'react';
 import { Color, type Group, type ShaderMaterial } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Station, useStationRef } from './Station';
-import { ANCHORS, stopRangeOf } from '../../core/timeline';
+import { ANCHORS, firstStopOf } from '../../core/timeline';
 import { skillSystems } from '../../content/stack';
 import { engine } from '../../core/scroll';
 import { app } from '../../core/store';
+import { selectSystem } from '../../core/stackSelection';
 import { frame } from '../../core/ticker';
-import { clamp, damp, easeInOutCubic } from '../../core/math';
+import { Spring, clamp, damp, easeInOutCubic } from '../../core/math';
 import { Board } from '../objects/Board';
 import { Chip } from '../objects/Chip';
 import { Glows } from '../objects/Glows';
@@ -19,7 +20,18 @@ import { mats } from '../objects/materials';
 import { C } from '../shared';
 
 const R = 4.7;
-const STEP = (Math.PI * 2) / skillSystems.length;
+const N = skillSystems.length;
+const STEP = (Math.PI * 2) / N;
+const STOP = firstStopOf('stack');
+
+/** Continuous ring position (in chiplet units), sprung toward the selected system. */
+const ring = { cur: 0, spring: new Spring(0, 70, 2 * Math.sqrt(70) * 0.92) };
+/** Signed shortest distance from the ring position to chiplet k, wrapping around. */
+const wrapDist = (cur: number, k: number) => {
+  const d = (((k - cur) % N) + N) % N;
+  return d > N / 2 ? d - N : d;
+};
+
 
 /** N points evenly distributed around a square perimeter (the chiplet's "pins"). */
 function perimeter(n: number, half: number): [number, number, number][] {
@@ -48,7 +60,7 @@ function routeFor(k: number): TracePath[] {
   }));
 }
 
-function Chiplet({ k, first }: { k: number; first: number }) {
+function Chiplet({ k }: { k: number }) {
   const sys = skillSystems[k];
   const lift = useRef<Group>(null);
   const traceMat = useRef<ShaderMaterial>(null);
@@ -62,10 +74,10 @@ function Chiplet({ k, first }: { k: number; first: number }) {
 
   useFrame(() => {
     if (!station.current?.visible) return;
-    const sub = engine.stopFloat - first;
-    const near = easeInOutCubic(clamp(1 - Math.abs(sub - k)));
+    const near = easeInOutCubic(clamp(1 - Math.abs(wrapDist(ring.cur, k))));
     if (lift.current) lift.current.position.y = near * 0.55;
-    const active = app.get().arrived === first + k;
+    const st = app.get();
+    const active = st.arrived === STOP && st.stackActive === k;
     reveal.value = engine.reduced ? (active ? 1 : 0) : damp(reveal.value, active ? 1.15 : 0, active ? 2.4 : 6, frame.dt);
     if (traceMat.current) {
       traceMat.current.uniforms.uPulse.value = 0.4 + near * 2.2;
@@ -76,7 +88,7 @@ function Chiplet({ k, first }: { k: number; first: number }) {
   return (
     <group position={[Math.sin(angle) * R, 0, Math.cos(angle) * R]} rotation-y={angle}>
       <group ref={lift}>
-        <SpatialObject lift={0.18} tilt={0.14} reach={1.4} onSelect={() => engine.toStop(first + k)}>
+        <SpatialObject lift={0.18} tilt={0.14} reach={1.4} onSelect={() => selectSystem(k)}>
           <Chip
             size={[2.3, 2.3]}
             height={0.26}
@@ -105,18 +117,17 @@ function Chiplet({ k, first }: { k: number; first: number }) {
 
 /** 03 — Technical stack: six chiplets on an interposer, one per skill system. */
 export function TechnicalStack() {
-  const [first, last] = stopRangeOf('stack');
-  const ring = useRef<Group>(null);
+  const group = useRef<Group>(null);
   const frameLines = useMemo(() => rectLines(16.5, 16.5, 0.01, 0.9), []);
 
   return (
-    <Station range={[first, last]} position={ANCHORS.stack}>
-      <StackRing ring={ring} first={first} />
-      <group ref={ring}>
+    <Station range={[STOP, STOP]} position={ANCHORS.stack}>
+      <StackRing group={group} />
+      <group ref={group}>
         <Board size={[13.5, 13.5]} color="#06080a" gridCell={0.34} edgeOpacity={0.3} />
         <Chip size={[3.1, 3.1]} kind="bga" height={0.32} label="ESE" labelHeight={0.5} edgeColor="#eef1f3" edgeOpacity={0.4} />
         {skillSystems.map((_, k) => (
-          <Chiplet key={k} k={k} first={first} />
+          <Chiplet key={k} k={k} />
         ))}
       </group>
       <lineSegments geometry={frameLines} material={mats.edge('#eef1f3', 0.22)} />
@@ -124,11 +135,17 @@ export function TechnicalStack() {
   );
 }
 
-function StackRing({ ring, first }: { ring: RefObject<Group | null>; first: number }) {
+/** Turns the interposer so the selected chiplet faces the camera (shortest way round). */
+function StackRing({ group }: { group: RefObject<Group | null> }) {
   useFrame(() => {
-    if (!ring.current) return;
-    const sub = clamp(engine.stopFloat - first, 0, skillSystems.length - 1);
-    ring.current.rotation.y = -sub * STEP;
+    const k = app.get().stackActive;
+    const target = ring.cur + wrapDist(ring.cur, k);
+    if (engine.reduced) {
+      ring.spring.value = target;
+      ring.spring.velocity = 0;
+    }
+    ring.cur = ring.spring.step(target, frame.dt);
+    if (group.current) group.current.rotation.y = -ring.cur * STEP;
   });
   return null;
 }
