@@ -45,10 +45,27 @@ const display = (id: ContactId, handle: string) => {
   return handle;
 };
 
+function Row({ id, i, label, handle }: { id: ContactId; i: number; label: string; handle: string }) {
+  return (
+    <>
+      <span className="ch__id">CH.{String(i + 1).padStart(2, '0')}</span>
+      <svg className="ch__glyph" viewBox="0 0 24 24" aria-hidden="true">
+        {GLYPH[id]}
+      </svg>
+      <span className="ch__name">{label}</span>
+      <span className="ch__handle">{handle}</span>
+      <svg className="ch__go" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 17L17 7M9 7h8v8" {...stroke} />
+      </svg>
+      <span className="ch__wire" aria-hidden="true" />
+    </>
+  );
+}
+
 /** 07 — Contact. Communication channels presented like I/O ports of the finished system. */
 export function ContactPanel() {
   const shown = useApp((s) => s.arrived === STOP);
-  const channels = profile.contact.filter((c) => c.href);
+  const channels = profile.contact;
 
   return (
     <SectionTransition id="system" label="Contact">
@@ -65,24 +82,21 @@ export function ContactPanel() {
         <ul className="channels">
           {channels.map((c, i) => (
             <li key={c.id} data-r style={{ ['--i' as string]: 2 + i * 0.7 } as CSSProperties}>
-              <a
-                className="ch"
-                href={c.href}
-                target={c.id === 'email' ? undefined : '_blank'}
-                rel={c.id === 'email' ? undefined : 'noreferrer noopener'}
-                aria-label={`${c.label}: ${display(c.id, c.handle)}`}
-              >
-                <span className="ch__id">CH.{String(i + 1).padStart(2, '0')}</span>
-                <svg className="ch__glyph" viewBox="0 0 24 24" aria-hidden="true">
-                  {GLYPH[c.id]}
-                </svg>
-                <span className="ch__name">{c.label}</span>
-                <span className="ch__handle">{display(c.id, c.handle)}</span>
-                <svg className="ch__go" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M7 17L17 7M9 7h8v8" {...stroke} />
-                </svg>
-                <span className="ch__wire" aria-hidden="true" />
-              </a>
+              {c.href ? (
+                <a
+                  className="ch"
+                  href={c.href}
+                  target={c.id === 'email' ? undefined : '_blank'}
+                  rel={c.id === 'email' ? undefined : 'noreferrer noopener'}
+                  aria-label={`${c.label}: ${display(c.id, c.handle)}`}
+                >
+                  <Row id={c.id} i={i} label={c.label} handle={display(c.id, c.handle)} />
+                </a>
+              ) : (
+                <div className="ch ch--pending">
+                  <Row id={c.id} i={i} label={c.label} handle="Link pending" />
+                </div>
+              )}
             </li>
           ))}
         </ul>
