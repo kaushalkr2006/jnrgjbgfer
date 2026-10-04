@@ -281,8 +281,10 @@ function FocusCamera() {
     // Pure translation (camera and target move together): a glide, never a rotation.
     const gx = (f.x - 0.3) * 0.85 * near;
     const gz = (f.z + 0.4) * 0.45 * near;
-    cameraBias.target.set(gx, 0, gz);
-    cameraBias.pos.set(gx, 0, gz);
+    cameraBias.target.x += gx;
+    cameraBias.target.z += gz;
+    cameraBias.pos.x += gx;
+    cameraBias.pos.z += gz;
   });
   return null;
 }

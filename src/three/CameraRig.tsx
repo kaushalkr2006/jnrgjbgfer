@@ -22,13 +22,29 @@ const PATHS = STOPS.map((s, i) => {
 
 
 /**
- * Station-driven framing offset (world units). A station writes a desired offset for the
- * camera position and look target; the rig springs toward it, so focus can glide between
- * subjects inside one stop without any extra scroll.
+ * Station-driven framing offset (world units). Stations ADD their desired offset for the
+ * camera position and look target each frame (the rig clears it after reading); the rig
+ * follows on a critically damped spring, so focus glides between subjects inside one stop
+ * without any extra scroll.
  */
 export const cameraBias = { pos: new Vector3(), target: new Vector3() };
 const biasPos = new Vector3();
 const biasTgt = new Vector3();
+const biasPosV = new Vector3();
+const biasTgtV = new Vector3();
+const acc = new Vector3();
+
+/** Critically damped spring step for a vector (sub-stepped; frame-rate independent). */
+function springTo(x: Vector3, v: Vector3, target: Vector3, dt: number, k = 16) {
+  const c = 2 * Math.sqrt(k);
+  const steps = Math.max(1, Math.ceil(dt / (1 / 240)));
+  const h = dt / steps;
+  for (let i = 0; i < steps; i++) {
+    acc.subVectors(target, x).multiplyScalar(k).addScaledVector(v, -c);
+    v.addScaledVector(acc, h);
+    x.addScaledVector(v, h);
+  }
+}
 
 const pos = new Vector3();
 const tgt = new Vector3();
@@ -89,11 +105,20 @@ export function CameraRig({ parallax }: { parallax: boolean }) {
     }
     pos.add(drift);
 
-    const kb = reduced ? 1 : 1 - Math.exp(-3.2 * dt);
-    biasPos.lerp(cameraBias.pos, kb);
-    biasTgt.lerp(cameraBias.target, kb);
+    if (reduced) {
+      biasPos.copy(cameraBias.pos);
+      biasTgt.copy(cameraBias.target);
+      biasPosV.set(0, 0, 0);
+      biasTgtV.set(0, 0, 0);
+    } else {
+      springTo(biasPos, biasPosV, cameraBias.pos, dt);
+      springTo(biasTgt, biasTgtV, cameraBias.target, dt);
+    }
     pos.add(biasPos);
     tgt.add(biasTgt);
+    // Writers add into the bias again this frame.
+    cameraBias.pos.set(0, 0, 0);
+    cameraBias.target.set(0, 0, 0);
 
     // Portrait screens: pull back along the view axis so subjects still fit.
     const aspect = size.width / Math.max(1, size.height);

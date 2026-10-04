@@ -61,6 +61,8 @@ export interface AppState {
   stackManual: boolean;
   /** Keyword currently shown on the identity page. */
   identityWord: number;
+  /** Selected project on the projects page. */
+  projectActive: number;
 }
 
 export const app = createStore<AppState>({
@@ -78,6 +80,7 @@ export const app = createStore<AppState>({
   stackActive: 0,
   stackManual: false,
   identityWord: 0,
+  projectActive: 0,
 });
 
 export const useApp = <S,>(selector: (s: AppState) => S) => useStore(app, selector);

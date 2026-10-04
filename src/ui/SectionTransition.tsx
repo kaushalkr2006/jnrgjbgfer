@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useApp } from '../core/store';
-import { stopRangeOf, type SectionId } from '../core/timeline';
-import { clamp } from '../core/math';
+import type { SectionId } from '../core/timeline';
 
 interface SectionTransitionProps {
   id: SectionId;
@@ -22,14 +21,6 @@ export function SectionTransition({ id, label, className = '', children }: Secti
       {children}
     </section>
   );
-}
-
-/** Sub-stop state for multi-stop sections (stack systems, projects, flow tracks). */
-export function useSectionSub(id: SectionId) {
-  const [a, b] = stopRangeOf(id);
-  const arrived = useApp((s) => (s.arrived >= a && s.arrived <= b ? s.arrived - a : -1));
-  const nearest = useApp((s) => clamp(s.nearest - a, 0, b - a));
-  return { arrived, nearest, first: a, count: b - a + 1 };
 }
 
 /** Stagger index helper for reveal children. */
