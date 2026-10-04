@@ -125,7 +125,7 @@ export default function Scene({ tier }: { tier: Tier }) {
       <Atmosphere envMap={t.envMap} />
       <CameraRig parallax={t.parallax} />
       <SystemBus />
-      <HeroStation density={t.density} />
+      <HeroStation />
       <IdentityStation cellPx={t.voxelPx} />
       <TechnicalStack />
       {projects.map((p, i) => (

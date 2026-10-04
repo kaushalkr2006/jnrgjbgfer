@@ -268,7 +268,7 @@ class ScrollEngine {
   /** Touch (native momentum): settle a half-finished transition once input is idle. */
   private trySnap(now: number) {
     if (this.flying || this.pendingJump !== null || this.touching) return;
-    if (app.get().menuOpen) return;
+    if (app.get().menuOpen || (this.input === 'wheel' && this.lenis?.isScrolling === 'smooth')) return;
     if (now - this.lastInput < 0.22 || Math.abs(this.velocity) > 25) return;
     const i = this.stop;
     if (i === 0) return;

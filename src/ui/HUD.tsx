@@ -38,7 +38,7 @@ export function HUD() {
         )}
       </div>
       <div className="hud__coords">
-        <span ref={coords}>X 0.00   Y 15.50   Z 5.50</span>
+        <span ref={coords}>X 0.00   Y 1.90   Z 8.50</span>
       </div>
       <ProgressRail />
     </div>
