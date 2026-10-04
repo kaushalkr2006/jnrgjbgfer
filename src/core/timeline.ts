@@ -1,5 +1,4 @@
 import { projects } from '../content/projects';
-import { skillSystems } from '../content/stack';
 import { flowTracks } from '../content/flow';
 
 /**
@@ -108,18 +107,17 @@ function buildStops(): Stop[] {
     framing: 'center',
   });
 
+  // One stop for the whole stack: systems are switched in place (tabs, chiplets, auto-cycle).
   const st = ANCHORS.stack;
-  skillSystems.forEach((_, k) => {
-    raw.push({
-      section: 'stack',
-      sub: k,
-      length: k === 0 ? 1.15 : 0.72,
-      transition: k === 0 ? 0.7 : 0.34,
-      cam: add(st, [(k - 2.5) * 0.2, 9.4, 14.6]),
-      target: add(st, [0, 0.2, 0.9]),
-      arc: k === 0 ? 3 : 0,
-      framing: 'side',
-    });
+  raw.push({
+    section: 'stack',
+    sub: 0,
+    length: 1.2,
+    transition: 0.7,
+    cam: add(st, [0, 9.4, 14.6]),
+    target: add(st, [0, 0.2, 0.9]),
+    arc: 3,
+    framing: 'side',
   });
 
   projects.forEach((_, i) => {

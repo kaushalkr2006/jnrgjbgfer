@@ -55,6 +55,10 @@ export interface AppState {
   glReady: boolean;
   introStarted: boolean;
   evidenceFocus: number;
+  /** Selected skill system in the technical stack. */
+  stackActive: number;
+  /** True after a manual selection, until the auto-cycle resumes. */
+  stackManual: boolean;
 }
 
 export const app = createStore<AppState>({
@@ -69,6 +73,8 @@ export const app = createStore<AppState>({
   glReady: false,
   introStarted: false,
   evidenceFocus: -1,
+  stackActive: 0,
+  stackManual: false,
 });
 
 export const useApp = <S,>(selector: (s: AppState) => S) => useStore(app, selector);
