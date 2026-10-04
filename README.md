@@ -33,7 +33,7 @@ src/
   core/        scroll engine (staged timeline, snapping, keyboard), single rAF ticker,
                quality tiers, store, DOM↔3D anchor registry
   content/     all text and project data
-  three/       Scene (Canvas root), CameraRig, SystemBus, materials (GPU shaders),
+  three/       Scene (Canvas root), CameraRig, DieFloor (shared silicon floor), materials (GPU shaders),
                objects (Chip, Board, Waveform, Traces, Glows, DataStream, CellGrid,
                Scope, Panel, Block, SpatialObject), pcb/ (procedural router +
                PCBVisualization), stations/ (one per section), projects/ (ProjectScene

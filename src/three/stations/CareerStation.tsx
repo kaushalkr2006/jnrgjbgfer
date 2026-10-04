@@ -4,7 +4,6 @@ import { useFrame } from '@react-three/fiber';
 import { Station, useActivation } from './Station';
 import { ANCHORS, firstStopOf } from '../../core/timeline';
 import { profile } from '../../content/profile';
-import { Board } from '../objects/Board';
 import { Chip } from '../objects/Chip';
 import { Glows } from '../objects/Glows';
 import { Traces } from '../objects/Traces';
@@ -67,7 +66,6 @@ export function CareerStation() {
   return (
     <Station range={[stop, stop]} position={ANCHORS.career}>
       <group ref={group}>
-        <Board size={[12, 6.6]} color="#030405" gridCell={0.36} edgeOpacity={0.14} position-y={-0.02} />
         <Chip size={[2.4, 2.4]} kind="qfn" pins={7} label="ESE" labelHeight={0.45} edgeColor="#eef1f3" edgeOpacity={0.55} />
         <Traces paths={paths} reveal={reveal} stagger={5} color={new Color('#3a1c0a')} pulseColor={C.copper} speed={4} pulseLen={0.6} gap={4} />
         {ports.map((p, k) => (
