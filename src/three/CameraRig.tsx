@@ -106,7 +106,7 @@ export function CameraRig({ parallax }: { parallax: boolean }) {
     camera.rotateZ(s.roll);
 
     const speed = Math.abs(engine.velocity) / engine.vh;
-    s.fovKick = damp(s.fovKick, reduced ? 0 : Math.min(speed * 3.4, 7), 5, dt);
+    s.fovKick = damp(s.fovKick, reduced ? 0 : Math.min(speed * 2.6, 4.5), 6, dt);
     const baseFov = aspect < 1 ? 50 : 42;
     camera.fov = baseFov + s.fovKick;
 

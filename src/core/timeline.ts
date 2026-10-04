@@ -91,8 +91,8 @@ function buildStops(): Stop[] {
   raw.push({
     section: 'identity',
     sub: 0,
-    length: 3.9,
-    transition: 1.4,
+    length: 3.6,
+    transition: 1.3,
     cam: add(id, [0, 3.1, 10.5]),
     target: add(id, [0, 2.75, 0]),
     camVia: [
@@ -113,8 +113,8 @@ function buildStops(): Stop[] {
     raw.push({
       section: 'stack',
       sub: k,
-      length: k === 0 ? 1.6 : 0.9,
-      transition: k === 0 ? 0.75 : 0.32,
+      length: k === 0 ? 1.15 : 0.72,
+      transition: k === 0 ? 0.7 : 0.34,
       cam: add(st, [(k - 2.5) * 0.2, 9.4, 14.6]),
       target: add(st, [0, 0.2, 0.9]),
       arc: k === 0 ? 3 : 0,
@@ -127,8 +127,8 @@ function buildStops(): Stop[] {
     raw.push({
       section: 'projects',
       sub: i,
-      length: i === 0 ? 1.8 : 1.2,
-      transition: i === 0 ? 0.8 : 0.45,
+      length: i === 0 ? 1.25 : 0.95,
+      transition: i === 0 ? 0.75 : 0.5,
       cam: add(p, [-0.5, 4.0, 11.7]),
       target: add(p, [-0.85, 1.3, 0]),
       arc: i === 0 ? 2.5 : 1.2,
@@ -141,8 +141,8 @@ function buildStops(): Stop[] {
     raw.push({
       section: 'flow',
       sub: k,
-      length: k === 0 ? 1.6 : 0.75,
-      transition: k === 0 ? 0.8 : 0.28,
+      length: k === 0 ? 1.2 : 0.66,
+      transition: k === 0 ? 0.75 : 0.3,
       cam: add(fl, [-0.5, 12.6, 8.8 + FLOW_LANE_Z[k] * 0.2]),
       target: add(fl, [-0.5, 0, 0.9 + FLOW_LANE_Z[k] * 0.25]),
       arc: k === 0 ? 3 : 0,
@@ -154,7 +154,7 @@ function buildStops(): Stop[] {
   raw.push({
     section: 'career',
     sub: 0,
-    length: 1.8,
+    length: 1.3,
     transition: 0.8,
     cam: add(ca, [0, 11.5, 6.6]),
     target: add(ca, [0, 0, -1.0]),
@@ -166,7 +166,7 @@ function buildStops(): Stop[] {
   raw.push({
     section: 'evidence',
     sub: 0,
-    length: 1.9,
+    length: 1.35,
     transition: 0.8,
     cam: add(ev, [0.6, 3.4, 9.6]),
     target: add(ev, [0, 1.5, 0]),
@@ -178,7 +178,7 @@ function buildStops(): Stop[] {
   raw.push({
     section: 'system',
     sub: 0,
-    length: 2.8,
+    length: 2.5,
     transition: 0.9,
     cam: add(sy, [0, 4.6, 11.5]),
     target: add(sy, [0, 0.9, 0]),
