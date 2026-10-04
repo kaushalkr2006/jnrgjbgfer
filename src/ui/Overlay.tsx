@@ -11,6 +11,7 @@ import { FlowPanel } from './sections/FlowPanel';
 import { CareerPanel } from './sections/CareerPanel';
 import { EvidencePanel } from './sections/EvidencePanel';
 import { FinalPanel } from './sections/FinalPanel';
+import { ScrollCue } from './ScrollCue';
 
 /** Fast black veil: long jumps, and cuts instead of camera flights under reduced motion. */
 function TransitionVeil() {
@@ -43,6 +44,7 @@ export function Overlay() {
         <EvidencePanel />
         <FinalPanel />
       </main>
+      <ScrollCue />
       <TransitionVeil />
       <HUD />
       <Navigation />

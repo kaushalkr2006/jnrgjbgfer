@@ -32,8 +32,8 @@ export function HeroPanel() {
         </div>
       </dl>
 
-      <button className="hero__cue intro intro--4" onClick={() => engine.step(1)}>
-        <span className="hero__cue-line" aria-hidden="true">
+      <button className="cue hero__cue intro intro--4" onClick={() => engine.step(1)}>
+        <span className="cue__line" aria-hidden="true">
           <span />
         </span>
         Scroll to enter
