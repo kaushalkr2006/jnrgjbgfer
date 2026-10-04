@@ -10,7 +10,7 @@ export interface ContactChannel {
   label: string;
   /** Displayed handle / address. */
   handle: string;
-  /** Full URL (use `mailto:` for email). Channels with an empty href are not shown. */
+  /** Full URL (use `mailto:` for email). Leave empty to show the channel as "link pending". */
   href: string;
 }
 
@@ -50,8 +50,11 @@ export const profile = {
   },
 
   /**
-   * Contact channels shown on the final page. Fill in `handle` + `href` for each one;
-   * any channel left empty is hidden automatically.
+   * Contact channels shown on the final page. To bind a channel, fill in `handle` + `href`:
+   *   linkedin:  handle: 'in/your-name',  href: 'https://www.linkedin.com/in/your-name'
+   *   instagram: handle: 'your.username', href: 'https://www.instagram.com/your.username'
+   *   email:     handle: 'you@gmail.com', href: 'mailto:you@gmail.com'
+   * Unbound channels still appear, marked "link pending".
    */
   contact: [
     { id: 'github', label: 'GitHub', handle: 'kaushalkr2006', href: 'https://github.com/kaushalkr2006' },

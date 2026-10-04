@@ -1165,3 +1165,38 @@ html[data-motion="reduced"] .ch__go {
     grid-area: go;
   }
 }
+
+/* Channel not bound to a link yet */
+.ch--pending {
+  cursor: default;
+}
+.ch--pending .ch__handle {
+  color: var(--ink-3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.ch--pending .ch__go {
+  opacity: 0;
+}
+.ch--pending .ch__name {
+  color: var(--ink-2);
+}
+.ch--pending:hover .ch__name {
+  font-weight: 380;
+  font-stretch: 128%;
+  transform: none;
+}
+.ch--pending:hover .ch__wire {
+  transform: scaleX(0);
+}
+.ch--pending:hover .ch__id,
+.ch--pending:hover .ch__glyph {
+  color: inherit;
+}
+.ch--pending:hover .ch__glyph {
+  color: var(--ink-2);
+}
+.ch--pending:hover .ch__id {
+  color: var(--ink-3);
+}
