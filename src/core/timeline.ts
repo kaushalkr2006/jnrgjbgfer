@@ -81,8 +81,8 @@ function buildStops(): Stop[] {
     sub: 0,
     length: 0.12,
     transition: 0,
-    cam: [0, 15.5, 5.5],
-    target: [0, 0, 0],
+    cam: [0, 1.9, 8.5],
+    target: [0, 0.75, -6],
     framing: 'center',
   });
 
@@ -96,14 +96,14 @@ function buildStops(): Stop[] {
     cam: add(id, [0, 3.1, 10.5]),
     target: add(id, [0, 2.75, 0]),
     camVia: [
-      [0, 6.5, -2],
-      [0.6, 1.25, -14],
-      [0, 1.6, -24],
+      [0, 1.15, -3],
+      [0.5, 0.75, -14],
+      [0, 1.4, -24],
     ],
     targetVia: [
-      [0, 0.2, -11],
-      [0, 0.9, -26],
-      [0, 2.2, -36],
+      [0, 0.35, -16],
+      [0, 0.8, -27],
+      [0, 2.1, -36],
     ],
     framing: 'center',
   });
