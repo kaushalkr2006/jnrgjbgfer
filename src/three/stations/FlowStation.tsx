@@ -8,7 +8,6 @@ import { engine } from '../../core/scroll';
 import { app } from '../../core/store';
 import { frame } from '../../core/ticker';
 import { clamp, damp } from '../../core/math';
-import { Board } from '../objects/Board';
 import { Chip } from '../objects/Chip';
 import { Glows } from '../objects/Glows';
 import { Traces } from '../objects/Traces';
@@ -103,7 +102,6 @@ export function FlowStation() {
   const [first, last] = stopRangeOf('flow');
   return (
     <Station range={[first, last]} position={ANCHORS.flow}>
-      <Board size={[20, 8.6]} color="#030405" gridCell={0.5} edgeOpacity={0.12} position={[0.2, -0.02, 0]} />
       <FlowAnchors />
       {flowTracks.map((_, k) => (
         <Lane key={k} k={k} first={first} />

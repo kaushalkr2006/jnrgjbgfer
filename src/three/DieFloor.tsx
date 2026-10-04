@@ -1,22 +1,25 @@
-import { useEffect, useMemo } from 'react';
-import { Color, ShaderMaterial, UniformsLib, UniformsUtils, Vector3 } from 'three';
-import { useFrame } from '@react-three/fiber';
-import { Station } from './Station';
-import { shared } from '../shared';
-import { pointer } from '../../core/pointer';
-import { engine } from '../../core/scroll';
-import { frame } from '../../core/ticker';
-import { damp, easeInOutCubic, smoothstep } from '../../core/math';
+import { useEffect, useMemo, useRef } from 'react';
+import { Color, ShaderMaterial, UniformsLib, UniformsUtils, Vector3, type Mesh } from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
+import { shared } from './shared';
+import { pointer } from '../core/pointer';
+import { engine } from '../core/scroll';
+import { frame } from '../core/ticker';
+import { damp, easeInOutCubic, smoothstep } from '../core/math';
 
-/** Die plane footprint (world units). Near edge sits behind the camera; far edge fades out. */
-const DIE = { w: 64, d: 48, cz: -10 };
+/**
+ * The floor of the whole world: one procedural silicon die that every station sits on.
+ * The plane follows the camera, but the pattern lives in world space, so it never swims.
+ */
+const SIZE = 150;
+const FLOOR_Y = -0.02;
+/** Extent of the opening's inspection scan along world X. */
+const SCAN_HALF = 32;
 
 const vertex = /* glsl */ `
 varying vec3 vWorld;
-varying vec2 vP;
 #include <fog_pars_vertex>
 void main() {
-  vP = position.xy;
   vec4 world = modelMatrix * vec4(position, 1.0);
   vWorld = world.xyz;
   vec4 mvPosition = viewMatrix * world;
@@ -36,11 +39,12 @@ const fragment = /* glsl */ `
 uniform float uTime;
 uniform float uIntro;
 uniform vec3 uLight;
-uniform vec2 uHalf;
+uniform float uScanHalf;
+uniform float uFadeNear;
+uniform float uFadeFar;
 uniform vec3 uSignal;
 uniform vec3 uBg;
 varying vec3 vWorld;
-varying vec2 vP;
 #include <fog_pars_fragment>
 
 float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -131,8 +135,8 @@ void main() {
   float specTight = pow(nh, 140.0);
   float fres = pow(1.0 - max(dot(V, N), 0.0), 4.0);
 
-  vec3 film = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + dot(V, N) * 1.6 + t * 0.35));
-  col += film * (0.006 + specBroad * 0.03) * (1.0 - metal);
+  vec3 film = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + dot(V, N) * 1.6 + t * 0.08));
+  col += film * (0.004 + specBroad * 0.03) * (1.0 - metal);
 
   vec3 metalCol = mix(vec3(0.60, 0.58, 0.55), vec3(0.55, 0.60, 0.66), t2);
   col = mix(col, metalCol * (0.022 + specBroad * 0.3 + specTight * 2.4), metal * 0.9);
@@ -148,16 +152,18 @@ void main() {
 
   // ---- intro: an inspection scan sweeps the die into view ----------------------------
   float wx = vWorld.x;
-  float front = mix(-uHalf.x - 6.0, uHalf.x + 6.0, smoothstep(0.0, 0.9, uIntro));
+  float front = mix(-uScanHalf - 6.0, uScanHalf + 6.0, smoothstep(0.0, 0.9, uIntro));
   float shown = 1.0 - smoothstep(front - 5.0, front, wx);
   float scan = exp(-abs(wx - front) * 2.2) * (1.0 - smoothstep(0.85, 1.0, uIntro));
   col = col * shown + uSignal * scan * 0.12;
 
-  // ---- vignette toward the die edges -------------------------------------------------
-  vec2 e = abs(vP) / uHalf;
-  float far = clamp(vP.y / uHalf.y * 0.5 + 0.5, 0.0, 1.0); // 0 near edge, 1 far edge
-  float vig = (1.0 - smoothstep(0.5, 0.95, e.x)) * (1.0 - smoothstep(0.62, 0.98, e.y)) * (1.0 - smoothstep(0.62, 0.97, far));
-  col = mix(uBg, col, vig);
+  // ---- steep (top-down) views: keep the floor a quiet backdrop for the content -------
+  float graze = 1.0 - abs(V.y);
+  col *= mix(0.42, 1.0, smoothstep(0.12, 0.75, graze));
+
+  // ---- distance fade into the background (clean horizon at any camera angle) ---------
+  float dist = length(vWorld.xz - cameraPosition.xz);
+  col = mix(uBg, col, 1.0 - smoothstep(uFadeNear, uFadeFar, dist));
 
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>
@@ -166,10 +172,12 @@ void main() {
 `;
 
 /**
- * 01 — Opening. A macro view across a silicon die under a raking light. An inspection scan
- * reveals it, the light follows the pointer, and the camera then skims the surface inward.
+ * A macro view of silicon under a raking light. On the opening an inspection scan reveals it,
+ * the light follows the pointer, and every later section rests on the same surface.
  */
-export function HeroStation() {
+export function DieFloor() {
+  const mesh = useRef<Mesh>(null);
+  const camera = useThree((s) => s.camera);
   const material = useMemo(
     () =>
       new ShaderMaterial({
@@ -180,7 +188,9 @@ export function HeroStation() {
           uTime: shared.uTime,
           uIntro: shared.uIntro,
           uLight: { value: new Vector3(-0.6, 0.35, -1) },
-          uHalf: { value: [DIE.w / 2, DIE.d / 2] },
+          uScanHalf: { value: SCAN_HALF },
+          uFadeNear: { value: 24 },
+          uFadeFar: { value: 62 },
           uSignal: { value: new Color('#6ee7ff') },
           uBg: { value: new Color('#030405') },
         },
@@ -192,6 +202,7 @@ export function HeroStation() {
 
   const light = useMemo(() => ({ az: -1.25, el: 0.32 }), []);
   useFrame(() => {
+    if (mesh.current) mesh.current.position.set(camera.position.x, FLOOR_Y, camera.position.z);
     const dt = frame.dt;
     // Light sweeps in with the intro, then drifts and follows the pointer slightly.
     const intro = easeInOutCubic(smoothstep(0, 1, shared.uIntro.value));
@@ -204,10 +215,8 @@ export function HeroStation() {
   });
 
   return (
-    <Station range={[0, 1]}>
-      <mesh material={material} rotation-x={-Math.PI / 2} position={[0, 0, DIE.cz]}>
-        <planeGeometry args={[DIE.w, DIE.d]} />
-      </mesh>
-    </Station>
+    <mesh ref={mesh} material={material} rotation-x={-Math.PI / 2} position-y={FLOOR_Y} frustumCulled={false} renderOrder={-1}>
+      <planeGeometry args={[SIZE, SIZE]} />
+    </mesh>
   );
 }

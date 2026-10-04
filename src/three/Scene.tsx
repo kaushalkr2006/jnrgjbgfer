@@ -11,8 +11,7 @@ import { shared } from './shared';
 import { clamp } from '../core/math';
 import { CameraRig } from './CameraRig';
 import { Atmosphere } from './Atmosphere';
-import { SystemBus } from './SystemBus';
-import { HeroStation } from './stations/HeroStation';
+import { DieFloor } from './DieFloor';
 import { IdentityStation } from './stations/IdentityStation';
 import { TechnicalStack } from './stations/TechnicalStack';
 import { FlowStation } from './stations/FlowStation';
@@ -124,8 +123,7 @@ export default function Scene({ tier }: { tier: Tier }) {
       <PerfGovernor min={t.dprMin} max={t.dprMax} />
       <Atmosphere envMap={t.envMap} />
       <CameraRig parallax={t.parallax} />
-      <SystemBus />
-      <HeroStation />
+      <DieFloor />
       <IdentityStation cellPx={t.voxelPx} />
       <TechnicalStack />
       {projects.map((p, i) => (

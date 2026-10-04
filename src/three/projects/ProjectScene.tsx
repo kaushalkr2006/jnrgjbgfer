@@ -2,7 +2,6 @@ import { useMemo, type ComponentType, type RefObject } from 'react';
 import { Station, useActivation, type Activation } from '../stations/Station';
 import { ANCHORS } from '../../core/timeline';
 import { statusLabel, type Project, type ProjectSceneKey } from '../../content/projects';
-import { Board } from '../objects/Board';
 import { Label } from '../objects/Label';
 import { rectLines } from '../geometry/edges';
 import { mats } from '../objects/materials';
@@ -37,7 +36,6 @@ function ProjectStage({ index, status }: { index: number; status: string }) {
   const brackets = useMemo(() => rectLines(11, 7.6, 0.01, 0.6), []);
   return (
     <group>
-      <Board size={[10, 6.8]} thickness={0.1} color="#050708" gridCell={0.32} edgeOpacity={0.16} position-y={-0.02} />
       <lineSegments geometry={brackets} material={mats.edge('#eef1f3', 0.35)} />
       <Label
         text={String(index).padStart(2, '0')}

@@ -9,7 +9,6 @@ import { frame } from '../../core/ticker';
 import { Spring } from '../../core/math';
 import { panelMaterial } from '../materials/panels';
 import { Label } from '../objects/Label';
-import { Board } from '../objects/Board';
 
 const SHEET = new PlaneGeometry(2.7, 1.75);
 
@@ -52,7 +51,6 @@ export function EvidenceStation() {
   const stop = firstStopOf('evidence');
   return (
     <Station range={[stop, stop]} position={ANCHORS.evidence}>
-      <Board size={[9, 6]} color="#050708" gridCell={0.3} edgeOpacity={0.12} position={[0.4, -0.02, -0.6]} />
       {evidence.map((_, k) => (
         <Sheet key={k} k={k} />
       ))}

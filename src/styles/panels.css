@@ -330,6 +330,10 @@ html[data-motion='reduced'] .hero__char > span {
   flex-direction: column;
   gap: 18px;
 }
+.side > *,
+.side .sub > * {
+  flex-shrink: 0;
+}
 .side .sub {
   display: flex;
   flex-direction: column;
@@ -548,7 +552,7 @@ html[data-motion='reduced'] .hero__char > span {
   grid-template-columns: 58px 52px 1fr auto;
   gap: 10px;
   align-items: center;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-top: 1px solid var(--line);
   color: var(--ink-2);
   position: relative;
