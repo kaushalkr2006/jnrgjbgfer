@@ -11,7 +11,7 @@ npm run build      # type-check + production build → dist/
 npm run preview    # serve the production build
 ```
 
-`dist/` is a static site. You can deploy it to any static host (Netlify, Vercel, GitHub Pages, S3).
+`dist/` is a static site that works at any sub-path. Every push to `main` builds it and deploys it to GitHub Pages via `.github/workflows/deploy.yml`. This needs **Settings → Pages → Source: GitHub Actions**.
 
 ## Editing content
 
