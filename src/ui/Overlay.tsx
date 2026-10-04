@@ -9,7 +9,7 @@ import { StackPanel } from './sections/StackPanel';
 import { ProjectViewer } from './sections/ProjectViewer';
 import { CareerPanel } from './sections/CareerPanel';
 import { EvidencePanel } from './sections/EvidencePanel';
-import { FinalPanel } from './sections/FinalPanel';
+import { ContactPanel } from './sections/ContactPanel';
 import { ScrollCue } from './ScrollCue';
 
 /** Fast black veil: long jumps, and cuts instead of camera flights under reduced motion. */
@@ -40,7 +40,7 @@ export function Overlay() {
         <ProjectViewer />
         <CareerPanel />
         <EvidencePanel />
-        <FinalPanel />
+        <ContactPanel />
       </main>
       <ScrollCue />
       <TransitionVeil />

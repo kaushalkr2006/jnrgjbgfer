@@ -1,6 +1,6 @@
 # Kaushal — Electronics Systems Engineering
 
-Scroll-driven 3D portfolio built as a cinematic tour through one connected electronic system: opening board, identity, a chiplet-based technical stack, eight project environments, career direction ports, an evidence register, and a final assembly scene.
+Scroll-driven 3D portfolio built as a cinematic tour through one connected electronic system: opening board, identity, a chiplet-based technical stack, eight project environments, career direction ports, an evidence register, and a contact page over the final assembly scene.
 
 **Stack:** Vite · React 19 · TypeScript · three.js · @react-three/fiber · Lenis
 
@@ -19,7 +19,7 @@ All copy is data-driven. Nothing about the person is hard-coded in components.
 
 | File | Contents |
 | --- | --- |
-| `src/content/profile.ts` | Name, field, focus, identity copy, career directions, evidence register, `links` (empty until real URLs are added) |
+| `src/content/profile.ts` | Name, field, focus, identity copy, career directions, evidence register, `contact` channels (GitHub, LinkedIn, Instagram, Gmail; empty ones are hidden) |
 | `src/content/stack.ts` | Skill systems (each one renders as a chiplet + pin map) |
 | `src/content/projects.ts` | Projects. `status: 'roadmap'` drives the "planned build" labels. Change it only when a project is actually complete. |
 
