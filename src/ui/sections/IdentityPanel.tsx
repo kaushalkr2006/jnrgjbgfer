@@ -1,3 +1,4 @@
+import { Editorial } from '../Editorial';
 import { useState } from 'react';
 import { SectionTransition, r } from '../SectionTransition';
 import { profile } from '../../content/profile';
@@ -23,7 +24,9 @@ export function IdentityPanel() {
           <span className="tag__num">{sectionIndex('identity')}</span> IDENTITY
         </p>
         <h2 className="identity__heading mask" data-m>
-          <span>{profile.identity.heading}</span>
+          <span>
+            <Editorial text={profile.identity.heading} />
+          </span>
         </h2>
         <div className="identity__copy">
           <p data-r style={r(2)}>{profile.identity.statement}</p>

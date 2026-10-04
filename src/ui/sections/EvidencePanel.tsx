@@ -1,3 +1,4 @@
+import { Editorial } from '../Editorial';
 import { sectionIndex } from '../../core/timeline';
 import { Icon } from '../Icon';
 import { useEffect, useRef, type ReactNode } from 'react';
@@ -149,7 +150,9 @@ export function EvidencePanel() {
           <span className="tag__num">{sectionIndex('evidence')}</span> PORTFOLIO / EVIDENCE
         </p>
         <h2 className="side__title mask" data-m>
-          <span>EVIDENCE REGISTER</span>
+          <span>
+            <Editorial text="EVIDENCE REGISTER" />
+          </span>
         </h2>
         <p className="dim evidence__caption" data-r style={r(2)}>
           The engineering evidence this portfolio is built to hold.

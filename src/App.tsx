@@ -29,6 +29,8 @@ function fontsReady() {
   const loads = Promise.all([
     fonts.load('800 150px "Geist Variable"'),
     fonts.load('500 64px "Geist Mono Variable"'),
+    fonts.load('400 120px "Anybody Variable"'),
+    fonts.load('italic 400 40px "Instrument Serif"'),
   ]).catch(() => undefined);
   return Promise.race([loads, new Promise((r) => setTimeout(r, 2500))]);
 }
