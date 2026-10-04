@@ -1,4 +1,3 @@
-import { projects } from '../content/projects';
 
 /**
  * The timeline maps scroll distance to camera "stops". Every stop has a TRANSITION region
@@ -114,19 +113,20 @@ function buildStops(): Stop[] {
     framing: 'side',
   });
 
-  projects.forEach((_, i) => {
-    const p = ANCHORS.project(i);
+  // One stop for all projects: the camera glides between project systems in place.
+  {
+    const p = ANCHORS.project(0);
     raw.push({
       section: 'projects',
-      sub: i,
-      length: i === 0 ? 1.25 : 0.95,
-      transition: i === 0 ? 0.75 : 0.5,
+      sub: 0,
+      length: 1.25,
+      transition: 0.75,
       cam: add(p, [-0.5, 4.0, 11.7]),
       target: add(p, [-0.85, 1.3, 0]),
-      arc: i === 0 ? 2.5 : 1.2,
+      arc: 2.5,
       framing: 'side',
     });
-  });
+  }
 
   const ca = ANCHORS.career;
   raw.push({

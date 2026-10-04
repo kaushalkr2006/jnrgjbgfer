@@ -57,7 +57,7 @@ src/
 **Accessibility.**
 - `prefers-reduced-motion` is respected, and the in-page MOTION toggle overrides it. With reduced motion, camera flights become short black cuts, ambient animation freezes and reveals become fades.
 - Hidden sections are `inert`.
-- Keyboard: ↑ ↓ / PageUp / PageDown / Space step through stops; Home / End jump to the ends; INDEX opens the section menu.
+- Keyboard: ↑ ↓ / PageUp / PageDown / Space step through stops; ← → browse projects on the Projects page; Home / End jump to the ends; INDEX opens the section menu.
 
 ## Content rule
 

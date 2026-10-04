@@ -3,6 +3,7 @@ import { STOPS } from './timeline';
 import { app } from './store';
 import { addTick } from './ticker';
 import { clamp, damp, easeInOutCubic } from './math';
+import { projects } from '../content/projects';
 
 /** Hold-progress targets used by keyboard / step navigation (fractions of each stop's hold). */
 const STEP_TARGETS: Record<number, number[]> = {};
@@ -399,6 +400,14 @@ class ScrollEngine {
       e.preventDefault();
       this.input = 'key';
     };
+    // On the projects page, ←/→ browse projects in place; ↑/↓ still move between pages.
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && app.get().visibleSection === 'projects') {
+      e.preventDefault();
+      const cur = app.get().projectActive;
+      const next = clamp(cur + (e.key === 'ArrowRight' ? 1 : -1), 0, projects.length - 1);
+      app.set({ projectActive: next });
+      return;
+    }
     switch (e.key) {
       case 'ArrowDown':
       case 'PageDown':

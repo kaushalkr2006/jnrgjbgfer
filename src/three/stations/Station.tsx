@@ -1,6 +1,6 @@
 import { createContext, useContext, useRef, type RefObject } from 'react';
-import type { Group } from 'three';
-import { useFrame, type ThreeElements } from '@react-three/fiber';
+import { Vector3, type Group } from 'three';
+import { useFrame, useThree, type ThreeElements } from '@react-three/fiber';
 import { engine } from '../../core/scroll';
 import { app } from '../../core/store';
 import { frame } from '../../core/ticker';
@@ -17,19 +17,26 @@ interface StationProps extends GroupProps {
   range: [number, number];
   /** Extra stops of visibility on each side. */
   margin?: number;
+  /** Also require the camera to be within this distance (for stations sharing one stop). */
+  maxDistance?: number;
 }
+
+const tmp = new Vector3();
 
 /**
  * A spatial section of the world. Only stations near the camera's timeline position are
  * rendered, keeping draw calls low regardless of how large the world grows.
  */
-export function Station({ range, margin = 0, children, ...group }: StationProps) {
+export function Station({ range, margin = 0, maxDistance, children, ...group }: StationProps) {
   const ref = useRef<Group>(null);
+  const camera = useThree((s) => s.camera);
   useFrame(() => {
     const g = ref.current;
     if (!g) return;
     const s = engine.stopFloat;
-    g.visible = s > range[0] - 1 - margin && s < range[1] + 1 + margin;
+    let on = s > range[0] - 1 - margin && s < range[1] + 1 + margin;
+    if (on && maxDistance !== undefined) on = camera.position.distanceTo(g.getWorldPosition(tmp)) < maxDistance;
+    g.visible = on;
   }, -2);
   return (
     <StationContext.Provider value={ref}>
@@ -48,12 +55,17 @@ export interface Activation {
   level: number;
 }
 
-/** Tracks arrival at a stop so scenes can play their information-reveal sequence. */
-export function useActivation(stopIndex: number) {
+/**
+ * Tracks arrival at a stop so scenes can play their information-reveal sequence.
+ * `when` narrows activation further (e.g. the selected project inside a shared stop).
+ */
+export function useActivation(stopIndex: number, when?: () => boolean) {
   const ref = useRef<Activation>({ active: false, t: 0, level: 0 });
+  const whenRef = useRef(when);
+  whenRef.current = when;
   useFrame(() => {
     const s = ref.current;
-    const active = app.get().arrived === stopIndex;
+    const active = app.get().arrived === stopIndex && (whenRef.current ? whenRef.current() : true);
     if (active && !s.active) s.t = 0;
     s.active = active;
     if (active) s.t += frame.dt;

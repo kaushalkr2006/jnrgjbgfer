@@ -17,7 +17,7 @@ import { TechnicalStack } from './stations/TechnicalStack';
 import { CareerStation } from './stations/CareerStation';
 import { EvidenceStation } from './stations/EvidenceStation';
 import { FinalStation } from './stations/FinalStation';
-import { ProjectScene } from './projects/ProjectScene';
+import { ProjectScene, ProjectsFocus } from './projects/ProjectScene';
 
 const INTRO_SECONDS = 2.8;
 
@@ -125,8 +125,9 @@ export default function Scene({ tier }: { tier: Tier }) {
       <DieFloor />
       <IdentityStation cellPx={t.voxelPx} />
       <TechnicalStack />
-      {projects.map((p, i) => (
-        <ProjectScene key={p.id} project={p} stop={first + i} density={t.density} />
+      <ProjectsFocus stop={first} />
+      {projects.map((p) => (
+        <ProjectScene key={p.id} project={p} stop={first} density={t.density} />
       ))}
       <CareerStation />
       <EvidenceStation />

@@ -1,5 +1,11 @@
 import { useMemo, type ComponentType, type RefObject } from 'react';
+import { Vector3 } from 'three';
+import { useFrame } from '@react-three/fiber';
 import { Station, useActivation, type Activation } from '../stations/Station';
+import { app } from '../../core/store';
+import { engine } from '../../core/scroll';
+import { clamp } from '../../core/math';
+import { cameraBias } from '../CameraRig';
 import { ANCHORS } from '../../core/timeline';
 import { statusLabel, type Project, type ProjectSceneKey } from '../../content/projects';
 import { Label } from '../objects/Label';
@@ -62,12 +68,32 @@ function ProjectStage({ index, status }: { index: number; status: string }) {
 }
 
 export function ProjectScene({ project, stop, density }: { project: Project; stop: number; density: number }) {
-  const act = useActivation(stop);
+  const i = project.index - 1;
+  const act = useActivation(stop, () => app.get().projectActive === i);
   const Scene = SCENES[project.scene];
   return (
-    <Station range={[stop, stop]} position={ANCHORS.project(project.index - 1)}>
+    <Station range={[stop, stop]} maxDistance={44} position={ANCHORS.project(i)}>
       <ProjectStage index={project.index} status={statusLabel[project.status].split(' ·')[0]} />
       <Scene act={act} density={density} />
     </Station>
   );
+}
+
+const home = new Vector3();
+const there = new Vector3();
+
+/**
+ * The projects page is one stop: selecting a project glides the camera (pure translation)
+ * from the first project's framing to the selected system's anchor.
+ */
+export function ProjectsFocus({ stop }: { stop: number }) {
+  useFrame(() => {
+    const near = clamp(1 - Math.abs(engine.stopFloat - stop));
+    if (near <= 0) return;
+    home.fromArray(ANCHORS.project(0));
+    there.fromArray(ANCHORS.project(app.get().projectActive)).sub(home).multiplyScalar(near);
+    cameraBias.pos.add(there);
+    cameraBias.target.add(there);
+  });
+  return null;
 }
