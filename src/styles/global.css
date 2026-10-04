@@ -202,7 +202,7 @@ button:disabled {
   transition: transform 0.22s var(--ease-in) 0s;
 }
 
-html[data-motion='reduced'] .hero__cue-line span,
+html[data-motion='reduced'] .cue__line span,
 html[data-motion='reduced'] .hero__tag .dot,
 html[data-motion='reduced'] .status__dot,
 html[data-motion='reduced'] .lane__pulse {

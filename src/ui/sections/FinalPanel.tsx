@@ -1,4 +1,3 @@
-import { Icon } from '../Icon';
 import { useState } from 'react';
 import { SectionTransition } from '../SectionTransition';
 import { profile } from '../../content/profile';
@@ -42,8 +41,11 @@ export function FinalPanel() {
             ))}
           </ul>
         )}
-        <button className="ctrl ctrl--wide" data-r style={{ ['--i' as string]: 5 }} onClick={() => engine.toStop(0)}>
-          <Icon name="replay" /> RETURN TO START
+        <button className="cue cue--back" data-r style={{ ['--i' as string]: 5 }} onClick={() => engine.toStop(0)}>
+          <span className="cue__line" aria-hidden="true">
+            <span />
+          </span>
+          Return to start
         </button>
       </div>
     </SectionTransition>

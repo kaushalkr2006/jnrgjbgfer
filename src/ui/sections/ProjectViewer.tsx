@@ -1,4 +1,3 @@
-import { Icon } from '../Icon';
 import { SectionTransition, r, useSectionSub } from '../SectionTransition';
 import { projects, statusLabel } from '../../content/projects';
 import { engine } from '../../core/scroll';
@@ -66,12 +65,14 @@ export function ProjectViewer() {
           </ul>
 
           <div className="prj__nav" data-r style={r(8)}>
-            <button className="ctrl" onClick={() => go(nearest - 1)} disabled={nearest === 0} aria-label="Previous project">
-              <Icon name="left" />
-            </button>
-            <button className="ctrl" onClick={() => go(nearest + 1)} disabled={nearest === count - 1} aria-label="Next project">
-              <Icon name="right" />
-            </button>
+            {nearest > 0 && (
+              <button className="cue cue--back" onClick={() => go(nearest - 1)} aria-label="Previous project">
+                <span className="cue__line" aria-hidden="true">
+                  <span />
+                </span>
+                Previous — {String(projects[nearest - 1].index).padStart(2, '0')}
+              </button>
+            )}
             {p.status === 'roadmap' && <span className="prj__note">Roadmap project — planned work, not a completed result.</span>}
           </div>
         </article>
