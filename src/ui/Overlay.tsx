@@ -7,7 +7,6 @@ import { HeroPanel } from './sections/HeroPanel';
 import { IdentityPanel } from './sections/IdentityPanel';
 import { StackPanel } from './sections/StackPanel';
 import { ProjectViewer } from './sections/ProjectViewer';
-import { FlowPanel } from './sections/FlowPanel';
 import { CareerPanel } from './sections/CareerPanel';
 import { EvidencePanel } from './sections/EvidencePanel';
 import { FinalPanel } from './sections/FinalPanel';
@@ -39,7 +38,6 @@ export function Overlay() {
         <IdentityPanel />
         <StackPanel />
         <ProjectViewer />
-        <FlowPanel />
         <CareerPanel />
         <EvidencePanel />
         <FinalPanel />

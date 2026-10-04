@@ -8,7 +8,6 @@ import { clamp, damp, easeInOutCubic } from './math';
 const STEP_TARGETS: Record<number, number[]> = {};
 STOPS.forEach((s) => {
   if (s.section === 'identity') STEP_TARGETS[s.index] = [0, 0.28, 0.48, 0.68, 0.88];
-  else if (s.section === 'system') STEP_TARGETS[s.index] = [0, 0.985];
   else STEP_TARGETS[s.index] = [0];
 });
 

@@ -1,3 +1,4 @@
+import { sectionIndex } from '../../core/timeline';
 import { useEffect, type KeyboardEvent } from 'react';
 import { SectionTransition, r } from '../SectionTransition';
 import { skillSystems } from '../../content/stack';
@@ -48,7 +49,7 @@ export function StackPanel() {
     <SectionTransition id="stack" label="Technical stack">
       <div className="side">
         <p className="tag" data-r style={r(0)}>
-          <span className="tag__num">03</span> TECHNICAL STACK
+          <span className="tag__num">{sectionIndex('stack')}</span> TECHNICAL STACK
         </p>
         <div className="tabs" role="tablist" aria-label="Skill systems" data-r style={r(1)} onKeyDown={onTabKey}>
           {skillSystems.map((s, i) => (

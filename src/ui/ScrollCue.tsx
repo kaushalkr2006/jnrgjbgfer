@@ -2,7 +2,6 @@ import { useApp } from '../core/store';
 import { engine } from '../core/scroll';
 import { SECTIONS, STOPS } from '../core/timeline';
 import { projects } from '../content/projects';
-import { flowTracks } from '../content/flow';
 
 /** What the next swipe leads to, phrased for the cue. */
 function nextLabel(stop: number) {
@@ -11,7 +10,6 @@ function nextLabel(stop: number) {
   const here = STOPS[stop];
   if (next.section === here.section) {
     if (next.section === 'projects') return `Next — Project ${String(projects[next.sub].index).padStart(2, '0')}`;
-    if (next.section === 'flow') return `Next — ${flowTracks[next.sub].title.toLowerCase()} track`;
     return 'Scroll to continue';
   }
   const meta = SECTIONS.find((s) => s.id === next.section);

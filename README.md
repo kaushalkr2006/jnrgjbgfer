@@ -1,6 +1,6 @@
 # Kaushal — Electronics Systems Engineering
 
-Scroll-driven 3D portfolio built as a cinematic tour through one connected electronic system: opening board, identity, a chiplet-based technical stack, eight project environments, the engineering flow map, career direction ports, an evidence register, and a final assembly scene.
+Scroll-driven 3D portfolio built as a cinematic tour through one connected electronic system: opening board, identity, a chiplet-based technical stack, eight project environments, career direction ports, an evidence register, and a final assembly scene.
 
 **Stack:** Vite · React 19 · TypeScript · three.js · @react-three/fiber · Lenis
 
@@ -22,7 +22,6 @@ All copy is data-driven. Nothing about the person is hard-coded in components.
 | `src/content/profile.ts` | Name, field, focus, identity copy, career directions, evidence register, `links` (empty until real URLs are added) |
 | `src/content/stack.ts` | Skill systems (each one renders as a chiplet + pin map) |
 | `src/content/projects.ts` | Projects. `status: 'roadmap'` drives the "planned build" labels. Change it only when a project is actually complete. |
-| `src/content/flow.ts` | Engineering-flow tracks |
 
 Adding a project means adding an entry to `projects.ts` and a scene in `src/three/projects/scenes/`, then registering it in `ProjectScene.tsx`. The camera stops, navigation and UI update automatically.
 
@@ -40,7 +39,7 @@ src/
                + 8 scenes)
   ui/          Overlay, Navigation, HUD + progress rail, SectionTransition,
                sections/ (HeroPanel, IdentityPanel, StackPanel, ProjectViewer,
-               FlowPanel, CareerPanel, EvidencePanel, FinalPanel)
+               CareerPanel, EvidencePanel, FinalPanel)
 ```
 
 **Motion model.** `core/timeline.ts` defines camera stops. Each stop has a *transition*, where the camera flies and content hides, and a *hold*, where the camera rests and content reveals after a brief pause. On wheel or trackpad, a small push into a transition commits the whole flight, which runs on a fixed, distance-scaled timeline. The rest of that gesture's momentum is absorbed, so one swipe moves one stop and the camera never stalls mid-flight. Touch uses native scrolling with idle snapping, and the keyboard uses the same flights.

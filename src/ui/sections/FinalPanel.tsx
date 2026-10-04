@@ -1,25 +1,20 @@
-import { useState } from 'react';
 import { SectionTransition } from '../SectionTransition';
 import { profile } from '../../content/profile';
 import { engine } from '../../core/scroll';
-import { useTick } from '../../core/ticker';
-import { firstStopOf } from '../../core/timeline';
+import { useApp } from '../../core/store';
+import { firstStopOf, sectionIndex } from '../../core/timeline';
 
 const STOP = firstStopOf('system');
 
 /** 08 — Final scene: once the system has converged, the identity resolves. Minimal. */
 export function FinalPanel() {
-  const [shown, setShown] = useState(false);
-  useTick(() => {
-    const v = engine.reduced ? engine.arrivalOf(STOP) >= 1 : engine.holdOf(STOP) > 0.6;
-    if (v !== shown) setShown(v);
-  });
+  const shown = useApp((s) => s.arrived === STOP);
 
   return (
     <SectionTransition id="system" label="System">
       <div className="final" data-on={shown}>
         <p className="tag final__tag" data-r>
-          <span className="tag__num">08</span> SYSTEM INTEGRATED
+          <span className="tag__num">{sectionIndex('system')}</span> SYSTEM INTEGRATED
         </p>
         <h2 className="final__name mask" data-m>
           <span>{profile.name}</span>

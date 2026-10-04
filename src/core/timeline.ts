@@ -1,5 +1,4 @@
 import { projects } from '../content/projects';
-import { flowTracks } from '../content/flow';
 
 /**
  * The timeline maps scroll distance to camera "stops". Every stop has a TRANSITION region
@@ -12,7 +11,6 @@ export type SectionId =
   | 'identity'
   | 'stack'
   | 'projects'
-  | 'flow'
   | 'career'
   | 'evidence'
   | 'system';
@@ -28,10 +26,9 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'identity', index: '02', label: 'Identity' },
   { id: 'stack', index: '03', label: 'Technical Stack' },
   { id: 'projects', index: '04', label: 'Projects' },
-  { id: 'flow', index: '05', label: 'Engineering Flow' },
-  { id: 'career', index: '06', label: 'Direction' },
-  { id: 'evidence', index: '07', label: 'Evidence' },
-  { id: 'system', index: '08', label: 'System' },
+  { id: 'career', index: '05', label: 'Direction' },
+  { id: 'evidence', index: '06', label: 'Evidence' },
+  { id: 'system', index: '07', label: 'System' },
 ];
 
 export type Vec3 = [number, number, number];
@@ -63,14 +60,10 @@ export const ANCHORS = {
   identity: [0, 0, -40] as Vec3,
   stack: [24, 0, -80] as Vec3,
   project: (i: number): Vec3 => [24 + (i % 2 === 0 ? -6 : 6), 0, -126 - i * 28],
-  flow: [0, 0, -378] as Vec3,
   career: [0, 0, -420] as Vec3,
   evidence: [0, 0, -458] as Vec3,
   system: [0, 0, -500] as Vec3,
 };
-
-/** Flow lanes run along X; these are their Z positions (top → bottom on screen). */
-export const FLOW_LANE_Z = [-2.7, -0.9, 0.9, 2.7];
 
 function buildStops(): Stop[] {
   const raw: Omit<Stop, 'index'>[] = [];
@@ -134,20 +127,6 @@ function buildStops(): Stop[] {
     });
   });
 
-  const fl = ANCHORS.flow;
-  flowTracks.forEach((_, k) => {
-    raw.push({
-      section: 'flow',
-      sub: k,
-      length: k === 0 ? 1.2 : 0.66,
-      transition: k === 0 ? 0.75 : 0.3,
-      cam: add(fl, [-0.5, 12.6, 8.8 + FLOW_LANE_Z[k] * 0.2]),
-      target: add(fl, [-0.5, 0, 0.9 + FLOW_LANE_Z[k] * 0.25]),
-      arc: k === 0 ? 3 : 0,
-      framing: 'center',
-    });
-  });
-
   const ca = ANCHORS.career;
   raw.push({
     section: 'career',
@@ -176,12 +155,12 @@ function buildStops(): Stop[] {
   raw.push({
     section: 'system',
     sub: 0,
-    length: 2.5,
-    transition: 0.9,
-    cam: add(sy, [0, 4.6, 11.5]),
+    // Complete on arrival: parts converge during the flight in, no extra swipes needed.
+    length: 1.25,
+    transition: 0.95,
+    cam: add(sy, [0, 7.4, 15.4]),
     target: add(sy, [0, 0.9, 0]),
-    drift: [0, 3.2, 4.5],
-    arc: 2,
+    arc: 1.5,
     framing: 'center',
   });
 
@@ -189,6 +168,9 @@ function buildStops(): Stop[] {
 }
 
 export const STOPS: Stop[] = buildStops();
+
+/** Two-digit display index of a section (e.g. '03'). */
+export const sectionIndex = (id: SectionId) => SECTIONS.find((s) => s.id === id)?.index ?? '';
 
 export const sectionStops = (section: SectionId) => STOPS.filter((s) => s.section === section);
 export const firstStopOf = (section: SectionId) => STOPS.findIndex((s) => s.section === section);

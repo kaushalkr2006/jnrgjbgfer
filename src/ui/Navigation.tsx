@@ -37,7 +37,7 @@ export function Navigation() {
             aria-expanded={menuOpen}
             aria-controls="index-menu"
           >
-            INDEX <span className="nav__dim">{SECTIONS.find((s) => s.id === section)?.index}/08</span>
+            INDEX <span className="nav__dim">{SECTIONS.find((s) => s.id === section)?.index}/{String(SECTIONS.length).padStart(2, '0')}</span>
           </button>
         </div>
       </header>

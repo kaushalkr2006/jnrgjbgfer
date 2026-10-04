@@ -1,3 +1,4 @@
+import { sectionIndex } from '../../core/timeline';
 import { SectionTransition, r } from '../SectionTransition';
 import { profile } from '../../content/profile';
 import { useAnchorRef } from '../../core/anchors';
@@ -23,7 +24,7 @@ export function CareerPanel() {
     <SectionTransition id="career" label="Career direction">
       <div className="career">
         <p className="tag" data-r style={r(0)}>
-          <span className="tag__num">06</span> DIRECTION
+          <span className="tag__num">{sectionIndex('career')}</span> DIRECTION
         </p>
         <h2 className="career__heading mask" data-m>
           <span>{profile.career.heading}</span>

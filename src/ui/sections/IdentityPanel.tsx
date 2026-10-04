@@ -3,7 +3,7 @@ import { SectionTransition, r } from '../SectionTransition';
 import { profile } from '../../content/profile';
 import { engine } from '../../core/scroll';
 import { useTick } from '../../core/ticker';
-import { firstStopOf } from '../../core/timeline';
+import { firstStopOf, sectionIndex } from '../../core/timeline';
 import { stagedSteps } from '../../core/math';
 
 const STOP = firstStopOf('identity');
@@ -20,7 +20,7 @@ export function IdentityPanel() {
     <SectionTransition id="identity" label="Professional identity">
       <div className="identity">
         <p className="tag" data-r style={r(0)}>
-          <span className="tag__num">02</span> IDENTITY
+          <span className="tag__num">{sectionIndex('identity')}</span> IDENTITY
         </p>
         <h2 className="identity__heading mask" data-m>
           <span>{profile.identity.heading}</span>
