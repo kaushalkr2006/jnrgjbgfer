@@ -43,7 +43,7 @@ src/
                FlowPanel, CareerPanel, EvidencePanel, FinalPanel)
 ```
 
-**Motion model.** `core/timeline.ts` defines camera stops. Each stop has a short *transition* region, where the camera flies and content hides, followed by a *hold* region, where the camera rests and content reveals after a brief pause. When scrolling stops partway through a transition, the engine snaps to the nearer stop.
+**Motion model.** `core/timeline.ts` defines camera stops. Each stop has a *transition*, where the camera flies and content hides, and a *hold*, where the camera rests and content reveals after a brief pause. On wheel or trackpad, a small push into a transition commits the whole flight, which runs on a fixed, distance-scaled timeline. The rest of that gesture's momentum is absorbed, so one swipe moves one stop and the camera never stalls mid-flight. Touch uses native scrolling with idle snapping, and the keyboard uses the same flights.
 
 **Performance.**
 - One `requestAnimationFrame` loop drives Lenis, DOM writers and R3F (`frameloop="never"` + `advance`).

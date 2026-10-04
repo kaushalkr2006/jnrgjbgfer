@@ -1,4 +1,4 @@
-import Lenis from 'lenis';
+import Lenis, { type VirtualScrollData } from 'lenis';
 import { STOPS } from './timeline';
 import { app } from './store';
 import { addTick } from './ticker';
@@ -12,9 +12,27 @@ STOPS.forEach((s) => {
   else STEP_TARGETS[s.index] = [0];
 });
 
+/** Fraction of a transition the user must scroll before the flight commits. */
+const COMMIT = 0.07;
+
+/** Flight time (s) into each stop, scaled by how far the camera travels. */
+const FLIGHT = STOPS.map((s, i) => {
+  if (i === 0) return 0;
+  if (i === 1) return 1.65; // the opening dive deserves a little more time
+  const a = STOPS[i - 1].cam;
+  const dist = Math.hypot(s.cam[0] - a[0], s.cam[1] - a[1], s.cam[2] - a[2]);
+  return clamp(0.55 + Math.sqrt(dist) * 0.1, 0.72, 1.35);
+});
+
+const linear = (t: number) => t;
+
 /**
- * Converts the document scroll position into the staged camera timeline, provides
- * snapping between stops and keyboard / programmatic navigation.
+ * Converts the document scroll position into the staged camera timeline.
+ *
+ * Wheel / trackpad: once a gesture pushes a little way into a transition, the engine takes
+ * over and flies the camera to the next stop on a fixed, distance-scaled timeline. Momentum
+ * from that gesture is absorbed so one swipe = one stop and the camera never stalls mid-flight.
+ * Touch keeps native scrolling with idle snapping. Keyboard steps use the same flights.
  */
 class ScrollEngine {
   lenis: Lenis | null = null;
@@ -41,16 +59,19 @@ class ScrollEngine {
   veil = 0;
 
   reduced = false;
+  /** True while an engine-driven scroll (flight, snap, step) is running. */
+  flying = false;
   private prevY = 0;
   private lastInput = -10;
+  private input: 'wheel' | 'touch' | 'key' = 'wheel';
   private touching = false;
-  private programmatic = false;
   private pendingJump: number | null = null;
   private lastTarget = 0;
   private veilTarget = 0;
   private lastW = 0;
   private lastH = 0;
   private started = false;
+  private wheel = { last: 0, abs: 0, guard: false, dir: 0 };
 
   init(spacer: HTMLElement, reduced: boolean) {
     if (this.started) return;
@@ -64,35 +85,38 @@ class ScrollEngine {
     this.lenis = new Lenis({
       autoRaf: false,
       smoothWheel: !reduced,
-      lerp: 0.095,
-      wheelMultiplier: 0.85,
+      lerp: 0.14,
+      wheelMultiplier: 1,
       touchMultiplier: 1.15,
       syncTouch: false,
       anchors: false,
       stopInertiaOnNavigate: true,
+      virtualScroll: this.onVirtualScroll,
     });
 
     this.measure(true);
 
-    const markInput = () => {
-      this.lastInput = performance.now() / 1000;
-      this.programmatic = false;
-    };
-    window.addEventListener('wheel', markInput, { passive: true });
     window.addEventListener(
       'touchstart',
       () => {
         this.touching = true;
-        markInput();
+        this.input = 'touch';
+        this.lastInput = performance.now() / 1000;
       },
       { passive: true },
     );
-    window.addEventListener('touchmove', markInput, { passive: true });
+    window.addEventListener(
+      'touchmove',
+      () => {
+        this.lastInput = performance.now() / 1000;
+      },
+      { passive: true },
+    );
     window.addEventListener(
       'touchend',
       () => {
         this.touching = false;
-        markInput();
+        this.lastInput = performance.now() / 1000;
       },
       { passive: true },
     );
@@ -106,6 +130,40 @@ class ScrollEngine {
     this.reduced = reduced;
     if (this.lenis) this.lenis.options.smoothWheel = !reduced;
   }
+
+  /**
+   * Wheel gate. Swallows input during flights, and the inertia tail of the gesture that
+   * triggered the last flight (trackpad momentum). A new gesture — a pause, a reversal or
+   * a fresh acceleration — passes straight through.
+   */
+  private onVirtualScroll = (data: VirtualScrollData) => {
+    const e = data.event;
+    if (!e.type.includes('wheel')) return true;
+    const now = performance.now();
+    const abs = Math.abs(data.deltaY);
+    const dir = Math.sign(data.deltaY);
+    const w = this.wheel;
+    const gap = now - w.last;
+    const fresh = gap > 200 || abs > w.abs * 1.6 + 4 || (dir !== 0 && dir !== w.dir);
+    w.last = now;
+    w.abs = abs;
+    if (dir !== 0) w.dir = dir;
+
+    if (this.flying || this.pendingJump !== null) {
+      if (e.cancelable) e.preventDefault();
+      return false;
+    }
+    if (w.guard) {
+      if (!fresh) {
+        if (e.cancelable) e.preventDefault();
+        return false;
+      }
+      w.guard = false;
+    }
+    this.input = 'wheel';
+    this.lastInput = now / 1000;
+    return true;
+  };
 
   private measure(force: boolean) {
     const w = window.innerWidth;
@@ -189,15 +247,27 @@ class ScrollEngine {
       lenis?.scrollTo(this.pendingJump, { immediate: true, force: true });
       this.pendingJump = null;
       this.veilTarget = 0;
-      this.programmatic = false;
+      this.endFlight();
     }
     this.veil = damp(this.veil, this.veilTarget, 16, dt);
 
+    this.tryCommit(i, d, tr);
     this.trySnap(t);
   }
 
+  /** Wheel / trackpad: a small push into a transition commits the whole flight. */
+  private tryCommit(i: number, d: number, tr: number) {
+    if (this.flying || this.pendingJump !== null || this.input !== 'wheel' || this.touching) return;
+    if (i === 0 || tr <= 0 || app.get().menuOpen) return;
+    if (d <= 1 || d >= tr - 1) return;
+    const p = d / tr;
+    if (this.dir > 0 && p > COMMIT) this.flyTo(this.holdStartY(i), FLIGHT[i] * (1 - p));
+    else if (this.dir < 0 && p < 1 - COMMIT) this.flyTo(this.starts[i] - 1, FLIGHT[i] * p);
+  }
+
+  /** Touch (native momentum): settle a half-finished transition once input is idle. */
   private trySnap(now: number) {
-    if (this.programmatic || this.touching || this.pendingJump !== null) return;
+    if (this.flying || this.pendingJump !== null || this.touching) return;
     if (app.get().menuOpen) return;
     if (now - this.lastInput < 0.22 || Math.abs(this.velocity) > 25) return;
     const i = this.stop;
@@ -207,35 +277,70 @@ class ScrollEngine {
     if (tr <= 0 || d <= 1.5 || d >= tr - 1.5) return;
     const p = d / tr;
     const forward = this.dir >= 0 ? p > 0.12 : p > 0.88;
-    this.goTo(forward ? this.starts[i] + tr + 2 : this.starts[i] - 1);
+    if (forward) this.flyTo(this.holdStartY(i), FLIGHT[i] * (1 - p));
+    else this.flyTo(this.starts[i] - 1, FLIGHT[i] * p);
   }
 
-  /** Smoothly scroll to a document position. Long distances use a fast veil cut. */
-  goTo(y: number, opts: { cut?: boolean } = {}) {
+  private endFlight() {
+    this.flying = false;
+    // Absorb the remaining inertia of the gesture that started this flight.
+    this.wheel.guard = this.input === 'wheel';
+  }
+
+  /**
+   * Engine-driven scroll with linear easing — the staged timeline already applies the
+   * camera's ease, so easing here as well would make flights sluggish at both ends.
+   */
+  private flyTo(y: number, seconds: number) {
     const lenis = this.lenis;
     const target = clamp(y, 0, this.total);
-    const dist = Math.abs(target - this.y);
     this.lastTarget = target;
     if (!lenis) {
       window.scrollTo(0, target);
       return;
     }
-    this.lastInput = performance.now() / 1000;
-    if (opts.cut || this.reduced) {
-      this.programmatic = true;
+    if (this.reduced) {
+      this.flying = true;
       this.pendingJump = target;
       this.veilTarget = 1;
       return;
     }
-    this.programmatic = true;
+    this.flying = true;
     lenis.scrollTo(target, {
-      duration: clamp(0.55 + (dist / this.vh) * 0.16, 0.55, 1.5),
-      easing: easeInOutCubic,
+      duration: Math.max(0.3, seconds),
+      easing: linear,
       force: true,
-      onComplete: () => {
-        this.programmatic = false;
-      },
+      onComplete: () => this.endFlight(),
     });
+  }
+
+  /** Flight time for an arbitrary scroll range: transition time crossed + time for holds. */
+  private durationFor(from: number, to: number) {
+    const a = Math.min(from, to);
+    const b = Math.max(from, to);
+    let s = 0;
+    STOPS.forEach((_, k) => {
+      const t0 = this.starts[k];
+      const t1 = t0 + this.trans[k];
+      const overlap = Math.max(0, Math.min(b, t1) - Math.max(a, t0));
+      if (this.trans[k] > 0 && overlap > 0) s += FLIGHT[k] * (overlap / this.trans[k]);
+    });
+    const holdTravel = Math.max(0, b - a - 0) / this.vh;
+    return clamp(s + Math.min(0.35, holdTravel * 0.12), 0.4, 2.2);
+  }
+
+  /** Smoothly scroll to a document position. Long distances use a fast veil cut. */
+  goTo(y: number, opts: { cut?: boolean } = {}) {
+    const target = clamp(y, 0, this.total);
+    if (opts.cut && !this.reduced && this.lenis) {
+      this.lastTarget = target;
+      this.flying = true;
+      this.pendingJump = target;
+      this.veilTarget = 1;
+      return;
+    }
+    const from = this.flying ? this.lastTarget : this.y;
+    this.flyTo(target, this.durationFor(from, target));
   }
 
   holdStartY(stopIndex: number) {
@@ -244,15 +349,14 @@ class ScrollEngine {
 
   toStop(stopIndex: number) {
     const k = clamp(stopIndex, 0, STOPS.length - 1);
-    const from = this.stop;
     const y = k === 0 ? 0 : this.holdStartY(k);
-    this.goTo(y, { cut: Math.abs(k - from) > 2 });
+    this.goTo(y, { cut: Math.abs(k - this.stop) > 2 });
   }
 
   step(direction: 1 | -1) {
-    // While a programmatic scroll is running, step relative to its destination so rapid
-    // key presses advance one stop each instead of re-targeting the same stop.
-    const y = this.pendingJump ?? (this.programmatic ? this.lastTarget : this.y);
+    // While a flight is running, step relative to its destination so rapid key presses
+    // advance one stop each instead of re-targeting the same stop.
+    const y = this.pendingJump ?? (this.flying ? this.lastTarget : this.y);
     let target: number | undefined;
     if (direction > 0) target = this.targets.find((v) => v > y + 4);
     else {
@@ -287,30 +391,34 @@ class ScrollEngine {
     const tag = el?.tagName ?? '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
     const onControl = tag === 'BUTTON' || tag === 'A';
+    const nav = () => {
+      e.preventDefault();
+      this.input = 'key';
+    };
     switch (e.key) {
       case 'ArrowDown':
       case 'PageDown':
       case 'ArrowRight':
-        e.preventDefault();
+        nav();
         this.step(1);
         break;
       case 'ArrowUp':
       case 'PageUp':
       case 'ArrowLeft':
-        e.preventDefault();
+        nav();
         this.step(-1);
         break;
       case ' ':
         if (onControl) return;
-        e.preventDefault();
+        nav();
         this.step(e.shiftKey ? -1 : 1);
         break;
       case 'Home':
-        e.preventDefault();
+        nav();
         this.toStop(0);
         break;
       case 'End':
-        e.preventDefault();
+        nav();
         this.goTo(this.total, { cut: true });
         break;
     }

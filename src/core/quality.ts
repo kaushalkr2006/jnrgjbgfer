@@ -14,8 +14,8 @@ export interface TierSettings {
 }
 
 export const TIERS: Record<Tier, TierSettings> = {
-  high: { dprMax: 2, dprMin: 1, antialias: true, density: 1, voxelPx: 5, envMap: true, parallax: true },
-  medium: { dprMax: 1.5, dprMin: 1, antialias: true, density: 0.7, voxelPx: 6, envMap: true, parallax: true },
+  high: { dprMax: 1.6, dprMin: 1, antialias: true, density: 1, voxelPx: 5, envMap: true, parallax: true },
+  medium: { dprMax: 1.35, dprMin: 1, antialias: true, density: 0.7, voxelPx: 6, envMap: true, parallax: true },
   low: { dprMax: 1.5, dprMin: 0.85, antialias: false, density: 0.45, voxelPx: 7, envMap: false, parallax: false },
 };
 

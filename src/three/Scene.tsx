@@ -52,13 +52,13 @@ function PerfGovernor({ min, max }: { min: number; max: number }) {
     s.ema = s.ema * 0.94 + dt * 0.06;
     s.cooldown -= dt;
     if (s.cooldown > 0) return;
-    if (s.ema > 1 / 48) {
+    if (s.ema > 1 / 50) {
       s.slow += dt;
-      if (s.slow > 1 && s.dpr > min) {
-        s.dpr = Math.max(min, Math.round((s.dpr - 0.25) * 100) / 100);
+      if (s.slow > 0.6 && s.dpr > min) {
+        s.dpr = Math.max(min, Math.round((s.dpr - 0.2) * 100) / 100);
         setDpr(s.dpr);
         s.slow = 0;
-        s.cooldown = 1.5;
+        s.cooldown = 1.2;
       }
     } else s.slow = Math.max(0, s.slow - dt * 0.5);
   });
