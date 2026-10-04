@@ -1,3 +1,4 @@
+import { Editorial } from '../Editorial';
 import { sectionIndex } from '../../core/timeline';
 import { SectionTransition, r } from '../SectionTransition';
 import { profile } from '../../content/profile';
@@ -27,7 +28,9 @@ export function CareerPanel() {
           <span className="tag__num">{sectionIndex('career')}</span> DIRECTION
         </p>
         <h2 className="career__heading mask" data-m>
-          <span>{profile.career.heading}</span>
+          <span>
+            <Editorial text={profile.career.heading} />
+          </span>
         </h2>
         <p className="career__caption dim" data-r style={r(2)}>
           {profile.career.caption}

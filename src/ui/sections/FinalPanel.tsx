@@ -20,7 +20,7 @@ export function FinalPanel() {
           <span>{profile.name}</span>
         </h2>
         <p className="final__field" data-r style={{ ['--i' as string]: 2 }}>
-          {profile.field}
+          {profile.field.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
         </p>
         <p className="final__focus" data-r style={{ ['--i' as string]: 3 }}>
           {profile.primaryFocus[0]} <span className="hero__plus">+</span> {profile.primaryFocus[1]}

@@ -14,6 +14,10 @@
 
   --sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Display: Anybody, a variable face with a width axis (50–150%) — expanded for names,
+     slightly widened for titles. Serif: Instrument Serif italic for editorial accents. */
+  --display: 'Anybody Variable', 'Geist Variable', ui-sans-serif, sans-serif;
+  --serif: 'Instrument Serif', 'Iowan Old Style', 'Times New Roman', serif;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.55, 0, 0.75, 0.2);
@@ -604,4 +608,23 @@ html[data-motion='reduced'] .mask > span {
   .rail__fill {
     will-change: auto;
   }
+}
+
+/* ==========================================================================
+   Editorial type system
+   ========================================================================== */
+.ed-d {
+  font-family: var(--display);
+}
+.ed-s {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  text-transform: none;
+  letter-spacing: -0.005em;
+  font-size: 1.12em;
+  line-height: 0.8;
+  color: var(--ink);
+  padding-right: 0.06em;
 }
