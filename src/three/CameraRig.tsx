@@ -21,6 +21,15 @@ const PATHS = STOPS.map((s, i) => {
 });
 
 
+/**
+ * Station-driven framing offset (world units). A station writes a desired offset for the
+ * camera position and look target; the rig springs toward it, so focus can glide between
+ * subjects inside one stop without any extra scroll.
+ */
+export const cameraBias = { pos: new Vector3(), target: new Vector3() };
+const biasPos = new Vector3();
+const biasTgt = new Vector3();
+
 const pos = new Vector3();
 const tgt = new Vector3();
 const drift = new Vector3();
@@ -79,6 +88,12 @@ export function CameraRig({ parallax }: { parallax: boolean }) {
       if (prev.drift) drift.fromArray(prev.drift).multiplyScalar(1 - (reduced ? Math.round(engine.transE) : engine.transE));
     }
     pos.add(drift);
+
+    const kb = reduced ? 1 : 1 - Math.exp(-3.2 * dt);
+    biasPos.lerp(cameraBias.pos, kb);
+    biasTgt.lerp(cameraBias.target, kb);
+    pos.add(biasPos);
+    tgt.add(biasTgt);
 
     // Portrait screens: pull back along the view axis so subjects still fit.
     const aspect = size.width / Math.max(1, size.height);

@@ -1,5 +1,14 @@
-import { useMemo, useRef, type RefObject } from 'react';
-import { Color, type Group, type ShaderMaterial } from 'three';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import {
+  Color,
+  Matrix4,
+  ShaderMaterial,
+  UniformsLib,
+  UniformsUtils,
+  type Group,
+  type InstancedMesh,
+  type LineBasicMaterial,
+} from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Station, useStationRef } from './Station';
 import { ANCHORS, firstStopOf } from '../../core/timeline';
@@ -8,144 +17,296 @@ import { engine } from '../../core/scroll';
 import { app } from '../../core/store';
 import { selectSystem } from '../../core/stackSelection';
 import { frame } from '../../core/ticker';
-import { Spring, clamp, damp, easeInOutCubic } from '../../core/math';
-import { Board } from '../objects/Board';
-import { Chip } from '../objects/Chip';
+import { Spring, clamp, mulberry32 } from '../../core/math';
 import { Glows } from '../objects/Glows';
+import { Label } from '../objects/Label';
 import { Traces } from '../objects/Traces';
 import { SpatialObject } from '../objects/SpatialObject';
+import { unitBox } from '../objects/Chip';
+import { boxEdges } from '../geometry/edges';
 import type { TracePath } from '../geometry/ribbons';
-import { rectLines } from '../geometry/edges';
 import { mats } from '../objects/materials';
-import { C } from '../shared';
+import { cameraBias } from '../CameraRig';
+import { shared, C } from '../shared';
 
-const R = 4.7;
-const N = skillSystems.length;
-const STEP = (Math.PI * 2) / N;
 const STOP = firstStopOf('stack');
 
-/** Continuous ring position (in chiplet units), sprung toward the selected system. */
-const ring = { cur: 0, spring: new Spring(0, 70, 2 * Math.sqrt(70) * 0.92) };
-/** Signed shortest distance from the ring position to chiplet k, wrapping around. */
-const wrapDist = (cur: number, k: number) => {
-  const d = (((k - cur) % N) + N) % N;
-  return d > N / 2 ? d - N : d;
-};
+/**
+ * Floorplan of a die: each skill system is an IP block, sized like real macros (bigger
+ * systems take more area). Coordinates are the block centre (x, z) and footprint (w, d).
+ */
+const FLOOR: { x: number; z: number; w: number; d: number }[] = [
+  { x: 3.25, z: -2.05, w: 3.9, d: 2.9 }, // EMB  — 9 skills
+  { x: -1.85, z: -2.05, w: 5.9, d: 2.9 }, // DIG  — 12 skills
+  { x: -3.6, z: 1.15, w: 2.4, d: 2.9 }, // PCB  — 6
+  { x: -0.85, z: 1.15, w: 2.7, d: 2.9 }, // DSP  — 6
+  { x: 2.1, z: 1.15, w: 2.8, d: 2.9 }, // SW   — 7
+  { x: 4.55, z: 1.15, w: 1.7, d: 2.9 }, // DSA  — 2
+];
+const SLAB = 0.07;
 
+/* ---------------------------------------------------------------------------------------- */
+/* Macro surface: standard-cell rows + guard ring, lit by selection, swept by a scan line     */
+/* ---------------------------------------------------------------------------------------- */
 
-/** N points evenly distributed around a square perimeter (the chiplet's "pins"). */
-function perimeter(n: number, half: number): [number, number, number][] {
-  const total = half * 8;
-  return Array.from({ length: n }, (_, i) => {
-    const d = ((i + 0.5) / n) * total;
-    const side = Math.floor(d / (half * 2));
-    const t = d - side * half * 2 - half;
-    const y = 0.32;
-    if (side === 0) return [t, y, half];
-    if (side === 1) return [half, y, -t];
-    if (side === 2) return [-t, y, -half];
-    return [-half, y, t];
+const vertex = /* glsl */ `
+varying vec2 vUv;
+#include <fog_pars_vertex>
+void main() {
+  vUv = uv;
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}
+`;
+
+const fragment = /* glsl */ `
+uniform vec3 uColor;
+uniform vec2 uSize;
+uniform float uActive;
+uniform float uHover;
+uniform float uTime;
+uniform float uSeed;
+varying vec2 vUv;
+#include <fog_pars_fragment>
+float h11(float n) { return fract(sin(n * 91.7 + uSeed * 13.1) * 43758.5453); }
+float lines(float c, float pitch, float width) {
+  float fw = max(fwidth(c), 1e-5);
+  float d = abs(fract(c / pitch + 0.5) - 0.5) * pitch;
+  float a = 1.0 - smoothstep(width * 0.5 - fw * 0.5, width * 0.5 + fw * 0.5, d);
+  return mix(a, width / pitch, smoothstep(0.2, 0.6, fw / pitch));
+}
+void main() {
+  vec2 p = (vUv - 0.5) * uSize;
+  vec2 e = uSize * 0.5 - abs(p);
+  float edge = min(e.x, e.y);
+  float fw = fwidth(edge);
+  float border = 1.0 - smoothstep(0.0, fw * 1.6, edge);
+  float ring = 1.0 - smoothstep(0.0, fw * 1.4, abs(edge - 0.16));
+  float inside = step(0.24, edge);
+
+  float rowPitch = 0.11;
+  float row = floor(p.y / rowPitch);
+  float rows = lines(p.y, rowPitch, 0.012);
+  float cellW = 0.16 + h11(row) * 0.32;
+  float cells = lines(p.x + h11(row + 3.0), cellW, 0.01);
+  float pattern = (rows * 0.55 + cells * 0.35) * inside;
+
+  float a = uActive;
+  float sweepX = fract(uTime * 0.22 + uSeed) * (uSize.x + 2.0) - 1.0 - uSize.x * 0.5;
+  float scan = exp(-abs(p.x - sweepX) * 4.0) * a * inside;
+
+  vec3 base = vec3(0.012, 0.014, 0.017);
+  vec3 col = base
+    + uColor * pattern * (0.06 + 0.42 * a + 0.12 * uHover)
+    + uColor * border * (0.28 + 0.9 * a + 0.3 * uHover)
+    + uColor * ring * (0.06 + 0.3 * a)
+    + uColor * scan * 0.35;
+  gl_FragColor = vec4(col, 1.0);
+  #include <colorspace_fragment>
+  #include <fog_fragment>
+}
+`;
+
+function macroMaterial(color: Color, size: [number, number], seed: number) {
+  return new ShaderMaterial({
+    vertexShader: vertex,
+    fragmentShader: fragment,
+    uniforms: {
+      ...UniformsUtils.clone(UniformsLib.fog),
+      uTime: shared.uTime,
+      uColor: { value: color.clone() },
+      uSize: { value: size },
+      uActive: { value: 0 },
+      uHover: { value: 0 },
+      uSeed: { value: seed },
+    },
+    fog: true,
   });
 }
 
-/** Interposer route from the core die to chiplet k, in the chiplet's local frame (+Z = outward). */
-function routeFor(k: number): TracePath[] {
-  return [-0.36, -0.12, 0.12, 0.36].map((o, i) => ({
-    pts: [
-      [o, 1.85 - R],
-      [o, -1.45],
-    ],
-    width: 0.05,
-    seed: (i * 0.23 + k * 0.17) % 1,
-  }));
+/** Pin positions laid out on a grid inside the block — one "pin" per skill. */
+function pinLayout(n: number, w: number, d: number, seed: number) {
+  const cols = Math.max(1, Math.round(Math.sqrt((n * w) / d)));
+  const rows = Math.ceil(n / cols);
+  const rng = mulberry32(seed);
+  const iw = w - 0.9;
+  const id = d - 0.9;
+  return Array.from({ length: n }, (_, i) => {
+    const c = i % cols;
+    const r = Math.floor(i / cols);
+    const x = cols === 1 ? 0 : (c / (cols - 1) - 0.5) * iw;
+    const z = rows === 1 ? 0 : (r / (rows - 1) - 0.5) * id;
+    return { x, z, h: 0.55 + rng() * 0.75, delay: (i / n) * 0.55 };
+  });
 }
 
-function Chiplet({ k }: { k: number }) {
+function MacroBlock({ k }: { k: number }) {
   const sys = skillSystems[k];
-  const lift = useRef<Group>(null);
-  const traceMat = useRef<ShaderMaterial>(null);
-  const pinMat = useRef<ShaderMaterial>(null);
+  const f = FLOOR[k];
   const station = useStationRef();
-  const reveal = useMemo(() => ({ value: 0 }), []);
-  const pins = useMemo(() => perimeter(sys.skills.length, 1.22), [sys.skills.length]);
-  const delays = useMemo(() => pins.map((_, i) => i / pins.length), [pins]);
-  const paths = useMemo(() => routeFor(k), [k]);
-  const angle = k * STEP;
+  const lift = useRef<Group>(null);
+  const pinsRef = useRef<InstancedMesh>(null);
+  const edgeMat = useRef<LineBasicMaterial>(null);
+  const tipReveal = useMemo(() => ({ value: 0 }), []);
+  const accent = k % 2 ? C.copper : C.signal;
+  const material = useMemo(() => macroMaterial(accent, [f.w, f.d], k * 0.17 + 0.1), [accent, f.w, f.d, k]);
+  const edges = useMemo(() => boxEdges([{ pos: [0, -SLAB / 2, 0], size: [f.w, SLAB, f.d] }]), [f.w, f.d]);
+  const pins = useMemo(() => pinLayout(sys.skills.length, f.w, f.d, 31 + k * 7), [sys.skills.length, f.w, f.d, k]);
+  const tips = useMemo(() => pins.map((p) => [p.x, p.h + 0.02, p.z] as [number, number, number]), [pins]);
+  const tipDelays = useMemo(() => pins.map((p) => p.delay + 0.3), [pins]);
+  const st = useRef({ level: new Spring(0, 90, 15), hover: 0, last: -1 });
+  const m = useMemo(() => new Matrix4(), []);
+  useEffect(() => () => material.dispose(), [material]);
+  useEffect(() => () => edges.dispose(), [edges]);
+
+  // Collapse all pins initially.
+  useLayoutEffect(() => {
+    const im = pinsRef.current;
+    if (!im) return;
+    pins.forEach((p, i) => {
+      m.makeScale(0.035, 0.0001, 0.035);
+      m.setPosition(p.x, 0, p.z);
+      im.setMatrixAt(i, m);
+    });
+    im.instanceMatrix.needsUpdate = true;
+  }, [pins, m]);
 
   useFrame(() => {
     if (!station.current?.visible) return;
-    const near = easeInOutCubic(clamp(1 - Math.abs(wrapDist(ring.cur, k))));
-    if (lift.current) lift.current.position.y = near * 0.55;
-    const st = app.get();
-    const active = st.arrived === STOP && st.stackActive === k;
-    reveal.value = engine.reduced ? (active ? 1 : 0) : damp(reveal.value, active ? 1.15 : 0, active ? 2.4 : 6, frame.dt);
-    if (traceMat.current) {
-      traceMat.current.uniforms.uPulse.value = 0.4 + near * 2.2;
-      traceMat.current.uniforms.uBase.value = 0.35 + near * 0.5;
+    const s = st.current;
+    const state = app.get();
+    const selected = state.stackActive === k;
+    const here = state.arrived === STOP;
+    const target = selected ? (here ? 1 : 0.45) : 0;
+    const level = engine.reduced ? target : clamp(s.level.step(target, frame.dt), 0, 1.2);
+    if (engine.reduced) s.level.value = target;
+
+    material.uniforms.uActive.value = Math.min(1, level);
+    material.uniforms.uHover.value = s.hover;
+    if (lift.current) lift.current.position.y = level * 0.28;
+    if (edgeMat.current) edgeMat.current.opacity = 0.25 + Math.min(1, level) * 0.6;
+    tipReveal.value = level;
+
+    // Grow pins (only when something changed — at rest this is free).
+    const im = pinsRef.current;
+    if (im && Math.abs(level - s.last) > 0.0005) {
+      pins.forEach((p, i) => {
+        const g = clamp((level - p.delay) / 0.35);
+        const e = 1 - Math.pow(1 - g, 3);
+        m.makeScale(0.035, Math.max(0.0001, p.h * e), 0.035);
+        m.setPosition(p.x, (p.h * e) / 2, p.z);
+        im.setMatrixAt(i, m);
+      });
+      im.instanceMatrix.needsUpdate = true;
+      s.last = level;
     }
   });
 
   return (
-    <group position={[Math.sin(angle) * R, 0, Math.cos(angle) * R]} rotation-y={angle}>
+    <group position={[f.x, 0.02, f.z]}>
       <group ref={lift}>
-        <SpatialObject lift={0.18} tilt={0.14} reach={1.4} onSelect={() => selectSystem(k)}>
-          <Chip
-            size={[2.3, 2.3]}
-            height={0.26}
-            kind="qfn"
-            pins={6}
-            label={sys.code}
-            labelHeight={0.42}
-            edgeColor={k % 2 ? '#ff8a3d' : '#6ee7ff'}
-            edgeOpacity={0.5}
+        <SpatialObject
+          lift={0.06}
+          tilt={0.03}
+          reach={Math.max(f.w, f.d) / 2}
+          onSelect={() => selectSystem(k)}
+          onHover={(over) => (st.current.hover = over ? 1 : 0)}
+        >
+          {/* slab body + outline */}
+          <mesh geometry={unitBox} material={mats.dark()} position-y={-SLAB / 2} scale={[f.w, SLAB, f.d]} />
+          <lineSegments geometry={edges}>
+            <lineBasicMaterial ref={edgeMat} color={accent} transparent opacity={0.3} depthWrite={false} />
+          </lineSegments>
+          {/* macro surface */}
+          <mesh material={material} rotation-x={-Math.PI / 2} position-y={0.001}>
+            <planeGeometry args={[f.w, f.d]} />
+          </mesh>
+          {/* die markings */}
+          <Label
+            text={sys.code}
+            height={0.3}
+            rotation-x={-Math.PI / 2}
+            position={[-f.w / 2 + 0.24, 0.004, -f.d / 2 + 0.36]}
+            align="left"
+            weight={600}
+            tint={accent.getStyle()}
+            opacity={0.95}
           />
-          <Glows points={pins} size={0.3} color={k % 2 ? C.copper : C.signal} intensity={1.05} delays={delays} reveal={reveal} materialRef={pinMat} />
+          <Label
+            text={sys.title}
+            height={0.12}
+            rotation-x={-Math.PI / 2}
+            position={[-f.w / 2 + 0.26, 0.004, -f.d / 2 + 0.64]}
+            align="left"
+            tint="#8a98a2"
+            opacity={0.9}
+          />
+          <Label
+            text={`${String(sys.skills.length).padStart(2, '0')} PINS`}
+            height={0.1}
+            rotation-x={-Math.PI / 2}
+            position={[f.w / 2 - 0.22, 0.004, f.d / 2 - 0.3]}
+            align="right"
+            tint="#5f6b74"
+          />
+          {/* one pin per skill, rising when the system is selected */}
+          <instancedMesh ref={pinsRef} args={[unitBox, mats.flat(k % 2 ? '#b86a35' : '#3fb8cf'), pins.length]} frustumCulled={false} />
+          <Glows points={tips} size={0.34} color={accent} intensity={1.3} delays={tipDelays} reveal={tipReveal} />
         </SpatialObject>
       </group>
-      <Traces
-        paths={paths}
-        materialRef={traceMat}
-        color={new Color('#123842')}
-        pulseColor={k % 2 ? C.copper : C.signal}
-        speed={3}
-        pulseLen={0.5}
-        gap={3}
-      />
     </group>
   );
 }
 
-/** 03 — Technical stack: six chiplets on an interposer, one per skill system. */
-export function TechnicalStack() {
-  const group = useRef<Group>(null);
-  const frameLines = useMemo(() => rectLines(16.5, 16.5, 0.01, 0.9), []);
+/** Gutter routing: a spine between the rows, with a drop into every block. */
+function useRoutes(): TracePath[] {
+  return useMemo(() => {
+    const spineZ = -0.45;
+    const out: TracePath[] = [];
+    for (const o of [-0.09, 0.09]) out.push({ pts: [[-5.2, spineZ + o], [5.8, spineZ + o]], width: 0.035, seed: o > 0 ? 0.2 : 0.7 });
+    FLOOR.forEach((f, i) => {
+      const edgeZ = f.z < spineZ ? f.z + f.d / 2 : f.z - f.d / 2;
+      for (const o of [-0.12, 0.12]) out.push({ pts: [[f.x + o, spineZ], [f.x + o, edgeZ]], width: 0.03, seed: (i * 0.17 + (o > 0 ? 0.5 : 0)) % 1 });
+    });
+    return out;
+  }, []);
+}
 
+/** Frames the camera on the selected block — a glide across the floorplan, no rotation. */
+function FocusCamera() {
+  useFrame(() => {
+    const near = clamp(1 - Math.abs(engine.stopFloat - STOP));
+    const f = FLOOR[app.get().stackActive];
+    // Pure translation (camera and target move together): a glide, never a rotation.
+    const gx = (f.x - 0.3) * 0.85 * near;
+    const gz = (f.z + 0.4) * 0.45 * near;
+    cameraBias.target.set(gx, 0, gz);
+    cameraBias.pos.set(gx, 0, gz);
+  });
+  return null;
+}
+
+/** 03 — Technical stack: a die floorplan; each skill system is an IP block with skill pins. */
+export function TechnicalStack() {
+  const routes = useRoutes();
   return (
     <Station range={[STOP, STOP]} position={ANCHORS.stack}>
-      <StackRing group={group} />
-      <group ref={group}>
-        <Board size={[13.5, 13.5]} color="#06080a" gridCell={0.34} edgeOpacity={0.3} />
-        <Chip size={[3.1, 3.1]} kind="bga" height={0.32} label="ESE" labelHeight={0.5} edgeColor="#eef1f3" edgeOpacity={0.4} />
-        {skillSystems.map((_, k) => (
-          <Chiplet key={k} k={k} />
-        ))}
-      </group>
-      <lineSegments geometry={frameLines} material={mats.edge('#eef1f3', 0.22)} />
+      <FocusCamera />
+      {skillSystems.map((_, k) => (
+        <MacroBlock key={k} k={k} />
+      ))}
+      <Traces paths={routes} level={0.012} color={new Color('#123842')} pulseColor={C.signal} speed={2.6} pulseLen={0.5} gap={4} />
+      <Label
+        text="FLOORPLAN — SKILL SYSTEMS"
+        height={0.12}
+        rotation-x={-Math.PI / 2}
+        position={[-5.25, 0.02, 3.05]}
+        align="left"
+        tint="#5f6b74"
+      />
+      <Glows points={[[5.8, 0.05, -0.45]]} size={0.5} color={C.signal} intensity={0.8} flicker={0.6} />
     </Station>
   );
 }
 
-/** Turns the interposer so the selected chiplet faces the camera (shortest way round). */
-function StackRing({ group }: { group: RefObject<Group | null> }) {
-  useFrame(() => {
-    const k = app.get().stackActive;
-    const target = ring.cur + wrapDist(ring.cur, k);
-    if (engine.reduced) {
-      ring.spring.value = target;
-      ring.spring.velocity = 0;
-    }
-    ring.cur = ring.spring.step(target, frame.dt);
-    if (group.current) group.current.rotation.y = -ring.cur * STEP;
-  });
-  return null;
-}
