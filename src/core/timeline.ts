@@ -158,8 +158,9 @@ function buildStops(): Stop[] {
     // Complete on arrival: parts converge during the flight in, no extra swipes needed.
     length: 1.25,
     transition: 0.95,
-    cam: add(sy, [0, 7.4, 15.4]),
-    target: add(sy, [0, 0.9, 0]),
+    // Shifted so the assembled system sits right of the contact list.
+    cam: add(sy, [-2.5, 7.4, 15.4]),
+    target: add(sy, [-2.5, 0.9, 0]),
     arc: 1.5,
     framing: 'side',
   });

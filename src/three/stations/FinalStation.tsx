@@ -116,7 +116,7 @@ export function FinalStation({ density }: { density: number }) {
         <Block size={[0.7, 0.32, 0.5]} label="CTRL" labelHeight={0.1} position={[0.45, 0, 0]} color="#ff8a3d" />
         <CellGrid dims={[10, 10]} pitch={0.15} mode="fabric" position={[0, -0.55, 0]} />
       </Assemble>
-      <Assemble from={[5.9, 3.0, 0.8]} to={[5.2, 1.7, -1.5]} rot={[0, 1.1, 0.25]} toRot={[0, -0.45, 0]} delay={0.4}>
+      <Assemble from={[4.6, 3.8, -0.6]} to={[2.9, 2.75, -2.7]} rot={[0, 1.1, 0.25]} toRot={[0, -0.25, 0]} delay={0.4}>
         <Scope size={[2.4, 1.4]} div={[10, 6]} label="MEASURE" sublabel="CH1 · CH2">
           <Waveform type="filtered" width={2.35} amp={0.3} freq={2} speed={0.3} thick={0.04} color={C.signal} position-y={0.25} />
           <Waveform type="uart" width={2.35} amp={0.12} freq={30} speed={2} thick={0.035} color={C.copper} position-y={-0.35} segments={420} />
