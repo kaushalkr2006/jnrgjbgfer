@@ -1,3 +1,4 @@
+import { sectionIndex } from '../../core/timeline';
 import { SectionTransition, r, useSectionSub } from '../SectionTransition';
 import { projects, statusLabel } from '../../content/projects';
 import { engine } from '../../core/scroll';
@@ -12,7 +13,7 @@ export function ProjectViewer() {
     <SectionTransition id="projects" label="Projects">
       <div className="side side--projects">
         <p className="tag" data-r style={r(0)}>
-          <span className="tag__num">04</span> PROJECTS
+          <span className="tag__num">{sectionIndex('projects')}</span> PROJECTS
         </p>
         <nav className="prj-rail" aria-label="Projects" data-r style={r(1)}>
           {projects.map((q, i) => (

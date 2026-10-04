@@ -204,8 +204,7 @@ button:disabled {
 
 html[data-motion='reduced'] .cue__line span,
 html[data-motion='reduced'] .hero__tag .dot,
-html[data-motion='reduced'] .status__dot,
-html[data-motion='reduced'] .lane__pulse {
+html[data-motion='reduced'] .status__dot {
   animation: none !important;
 }
 

@@ -1,3 +1,4 @@
+import { sectionIndex } from '../../core/timeline';
 import { Icon } from '../Icon';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { SectionTransition, r } from '../SectionTransition';
@@ -145,7 +146,7 @@ export function EvidencePanel() {
     <SectionTransition id="evidence" label="Portfolio evidence">
       <div className="side side--evidence">
         <p className="tag" data-r style={r(0)}>
-          <span className="tag__num">07</span> PORTFOLIO / EVIDENCE
+          <span className="tag__num">{sectionIndex('evidence')}</span> PORTFOLIO / EVIDENCE
         </p>
         <h2 className="side__title mask" data-m>
           <span>EVIDENCE REGISTER</span>

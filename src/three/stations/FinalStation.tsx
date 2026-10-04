@@ -17,11 +17,14 @@ import { C } from '../shared';
 
 const STOP = firstStopOf('system');
 
-/** Assembly progress (exploded → integrated) and power-on progress for the final scene. */
+/**
+ * Assembly (exploded → integrated) and power-on progress. Both run during the flight into
+ * the final stop, so the system is complete the moment the camera lands.
+ */
 function progress() {
-  if (engine.reduced) return { p: engine.arrivalOf(STOP) >= 1 ? 1 : 0, q: engine.arrivalOf(STOP) >= 1 ? 1 : 0 };
-  const hold = engine.holdOf(STOP);
-  return { p: smoothstep(0.0, 0.5, hold), q: smoothstep(0.4, 0.62, hold) };
+  const a = engine.arrivalOf(STOP);
+  if (engine.reduced) return { p: a >= 1 ? 1 : 0, q: a >= 1 ? 1 : 0 };
+  return { p: smoothstep(0.1, 0.92, a), q: smoothstep(0.78, 1, a) };
 }
 
 const qa = new Quaternion();

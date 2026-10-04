@@ -14,7 +14,6 @@ import { Atmosphere } from './Atmosphere';
 import { DieFloor } from './DieFloor';
 import { IdentityStation } from './stations/IdentityStation';
 import { TechnicalStack } from './stations/TechnicalStack';
-import { FlowStation } from './stations/FlowStation';
 import { CareerStation } from './stations/CareerStation';
 import { EvidenceStation } from './stations/EvidenceStation';
 import { FinalStation } from './stations/FinalStation';
@@ -129,7 +128,6 @@ export default function Scene({ tier }: { tier: Tier }) {
       {projects.map((p, i) => (
         <ProjectScene key={p.id} project={p} stop={first + i} density={t.density} />
       ))}
-      <FlowStation />
       <CareerStation />
       <EvidenceStation />
       <FinalStation density={t.density} />
